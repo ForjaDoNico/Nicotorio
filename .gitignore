@@ -140,3 +140,6 @@ crashlytics-build.properties
 # macOS / IDE
 .DS_Store
 *.slnx
+
+# Local screenshots from verification
+/Screenshots/

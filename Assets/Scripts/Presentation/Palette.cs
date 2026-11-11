@@ -1,0 +1,28 @@
+using UnityEngine;
+
+namespace Factory.Presentation
+{
+    /// <summary>The only place colors are defined. Every sprite and UI color reads from here.</summary>
+    public static class Palette
+    {
+        public static readonly Color32 Grass = Hex(0x5A8F4E);
+        public static readonly Color32 GrassDark = Hex(0x4C7C43);
+        public static readonly Color32 GrassLight = Hex(0x6BA05C);
+        public static readonly Color32 Path = Hex(0xC2A26B);
+        public static readonly Color32 Stone = Hex(0x6E6A7A);
+        public static readonly Color32 Ore = Hex(0x8C8FA6);
+        public static readonly Color32 OreHighlight = Hex(0xC9CCDA);
+        public static readonly Color32 HeroPrimary = Hex(0xD9583B);
+        public static readonly Color32 HeroSecondary = Hex(0xF2E2C4);
+        public static readonly Color32 Props = Hex(0x3E6B6E);
+        public static readonly Color32 Shadow = Hex(0x2B2440);
+        public static readonly Color32 Accent = Hex(0xF2C14E);
+        public static readonly Color32 Clear = new Color32(0, 0, 0, 0);
+
+        /// <summary>Warm late-afternoon key light.</summary>
+        public static readonly Color SunLight = Hex(0xFFF1DC);
+
+        private static Color32 Hex(int rgb) =>
+            new Color32((byte)((rgb >> 16) & 0xFF), (byte)((rgb >> 8) & 0xFF), (byte)(rgb & 0xFF), 255);
+    }
+}
