@@ -22,7 +22,7 @@ namespace Factory.Presentation
     /// </summary>
     public sealed class CraftingWindow : MonoBehaviour
     {
-        private const float Width = 780f;
+        private const float Width = 820f;
         private const float RowHeight = 64f;
         private const float RowGap = 6f;
         private const float HeaderHeight = 108f;
@@ -164,6 +164,18 @@ namespace Factory.Presentation
             _sb.Append(ItemNames.Of(recipe.Result.Item));
             if (recipe.Result.Count > 1) _sb.Append(" ×").Append(recipe.Result.Count);
             if (!craftable) _sb.Append("</color>");
+            if (!craftable)
+            {
+                // What is missing goes on the name line, which has room even for long recipes.
+                _sb.Append("   <size=19><color=").Append(red).Append(">faltam ");
+                List<ItemAmount> missing = Crafting.Missing(recipe, inv);
+                for (int i = 0; i < missing.Count; i++)
+                {
+                    if (i > 0) _sb.Append(", ");
+                    _sb.Append(missing[i].Count).Append(' ').Append(ItemNames.Of(missing[i].Item));
+                }
+                _sb.Append("</color></size>");
+            }
             row.Name.text = _sb.ToString();
 
             // Ingredients as have/need; a short ingredient's count is red.
@@ -181,24 +193,8 @@ namespace Factory.Presentation
             }
             row.Ingredients.text = _sb.ToString();
 
-            _sb.Clear();
-            if (craftable)
-            {
-                _sb.Append("<b>x").Append(max).Append("</b>");
-            }
-            else
-            {
-                _sb.Append("<color=").Append(red).Append(">faltam ");
-                List<ItemAmount> missing = Crafting.Missing(recipe, inv);
-                for (int i = 0; i < missing.Count; i++)
-                {
-                    if (i > 0) _sb.Append(", ");
-                    _sb.Append(missing[i].Count).Append(' ').Append(ItemNames.Of(missing[i].Item));
-                }
-                _sb.Append("</color>");
-            }
-            row.Right.text = _sb.ToString();
-            row.Right.color = craftable ? (Color)Palette.Accent : Color.white;
+            row.Right.text = craftable ? "<b>x" + max + "</b>" : "";
+            row.Right.color = Palette.Accent;
             row.Background.color = craftable ? (Color)Palette.BeltBed : new Color(0.2f, 0.18f, 0.27f, 1f);
             row.Interactable = craftable;
         }
@@ -212,8 +208,10 @@ namespace Factory.Presentation
             Color shadow = Palette.Shadow;
             _panel = NewUi("CraftingPanel", transform);
             _panelRect = (RectTransform)_panel.transform;
-            _panelRect.anchorMin = _panelRect.anchorMax = _panelRect.pivot = new Vector2(0.5f, 0f);
-            _panelRect.anchoredPosition = new Vector2(0f, 170f); // just above the hotbar, growing up
+            // Right side of the screen, growing up from above the hotbar line, so the player and
+            // the table (screen centre) stay visible.
+            _panelRect.anchorMin = _panelRect.anchorMax = _panelRect.pivot = new Vector2(1f, 0f);
+            _panelRect.anchoredPosition = new Vector2(-24f, 170f);
             var bg = _panel.AddComponent<Image>();
             bg.color = new Color(shadow.r, shadow.g, shadow.b, 0.94f);
 
@@ -283,9 +281,9 @@ namespace Factory.Presentation
             row.Icon = iconGo.AddComponent<Image>();
             row.Icon.raycastTarget = false;
 
-            row.Name = RowText(go.transform, 24, new Vector2(76f, -6f), new Vector2(-240f, 30f), TextAnchor.UpperLeft);
-            row.Ingredients = RowText(go.transform, 19, new Vector2(76f, -36f), new Vector2(-240f, 26f), TextAnchor.UpperLeft);
-            row.Right = RowText(go.transform, 22, new Vector2(-12f, 0f), new Vector2(230f, RowHeight), TextAnchor.MiddleRight, right: true);
+            row.Name = RowText(go.transform, 24, new Vector2(76f, -6f), new Vector2(-150f, 30f), TextAnchor.UpperLeft);
+            row.Ingredients = RowText(go.transform, 19, new Vector2(76f, -36f), new Vector2(-150f, 26f), TextAnchor.UpperLeft);
+            row.Right = RowText(go.transform, 24, new Vector2(-14f, 0f), new Vector2(110f, RowHeight), TextAnchor.MiddleRight, right: true);
             return row;
         }
 

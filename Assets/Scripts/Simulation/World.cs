@@ -156,16 +156,29 @@ namespace Factory.Simulation
             return PlaceResult.Ok;
         }
 
-        /// <summary>Whether the player's inventory covers every line of the building's cost.</summary>
+        /// <summary>
+        /// What placing this building takes from the player: its BuildCosts lines (raw materials,
+        /// only the crafting table today) plus one of its own item, if it has one. Empty in
+        /// FreeBuilding mode. Removal refunds exactly this.
+        /// </summary>
+        public IEnumerable<ItemAmount> PlacementCost(BuildingType type)
+        {
+            if (Config.FreeBuilding) yield break;
+            foreach (BuildCost cost in Config.BuildCosts)
+                if (cost.Building == type && cost.Count > 0) yield return new ItemAmount(cost.Item, cost.Count);
+            ItemType item = BuildingItems.ItemFor(type);
+            if (item != ItemType.None) yield return new ItemAmount(item, 1);
+        }
+
+        /// <summary>Whether the player's inventory covers the building's whole placement cost.</summary>
         public bool CanAfford(BuildingType type)
         {
-            foreach (BuildCost cost in Config.BuildCosts)
+            foreach (ItemAmount cost in PlacementCost(type))
             {
-                if (cost.Building != type) continue;
-                // Sum lines for the same item, in case the table splits one item over two lines.
+                // Sum lines for the same item, in case the cost names one item twice.
                 int needed = 0;
-                foreach (BuildCost other in Config.BuildCosts)
-                    if (other.Building == type && other.Item == cost.Item) needed += other.Count;
+                foreach (ItemAmount other in PlacementCost(type))
+                    if (other.Item == cost.Item) needed += other.Count;
                 if (PlayerInventory.Count(cost.Item) < needed) return false;
             }
             return true;
@@ -176,8 +189,7 @@ namespace Factory.Simulation
             PlaceResult result = CanPlace(type, pos);
             if (result != PlaceResult.Ok) return result;
 
-            foreach (BuildCost cost in Config.BuildCosts)
-                if (cost.Building == type) PlayerInventory.Remove(cost.Item, cost.Count);
+            foreach (ItemAmount cost in PlacementCost(type)) PlayerInventory.Remove(cost.Item, cost.Count);
 
             Building building = Create(type);
             building.Id = _nextBuildingId++;
@@ -190,14 +202,13 @@ namespace Factory.Simulation
         }
 
         /// <summary>
-        /// Removes the building on pos. Its build cost is refunded and anything it held goes
+        /// Removes the building on pos. Its placement cost (usually its own item) is refunded and anything it held goes
         /// to the player's inventory, so nothing is lost. Returns false if there was no building.
         /// </summary>
         public bool TryRemove(GridPos pos)
         {
             if (!_buildingsByPos.TryGetValue(pos, out Building building)) return false;
-            foreach (BuildCost cost in Config.BuildCosts)
-                if (cost.Building == building.Type && cost.Count > 0) PlayerInventory.Add(cost.Item, cost.Count);
+            foreach (ItemAmount cost in PlacementCost(building.Type)) PlayerInventory.Add(cost.Item, cost.Count);
             if (building is Chest chest) chest.Contents.TransferAllTo(PlayerInventory);
             if (building is Miner miner && miner.Output != ItemType.None) PlayerInventory.Add(miner.Output, 1);
             if (building is Belt belt)

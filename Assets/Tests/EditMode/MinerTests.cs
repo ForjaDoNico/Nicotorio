@@ -9,7 +9,7 @@ namespace Factory.Simulation.Tests
 
         private static World MakeWorld(int ticksPerItem = 20)
         {
-            var config = new WorldConfig { Width = 10, Height = 10, OrePatchCount = 0, MinerTicksPerItem = ticksPerItem, BuildCosts = TestWorlds.NoCosts };
+            var config = new WorldConfig { Width = 10, Height = 10, OrePatchCount = 0, MinerTicksPerItem = ticksPerItem, FreeBuilding = true };
             var world = new World(config, new TileType[config.Width * config.Height]);
             world.SetTile(OreTile, TileType.IronOre);
             return world;

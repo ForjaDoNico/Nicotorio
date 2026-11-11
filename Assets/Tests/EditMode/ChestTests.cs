@@ -12,7 +12,7 @@ namespace Factory.Simulation.Tests
             {
                 Width = 12, Height = 12, OrePatchCount = 0,
                 MinerTicksPerItem = 20, BeltSpeed = 100, BeltItemSpacing = 250,
-                BuildCosts = TestWorlds.NoCosts,
+                FreeBuilding = true,
             };
             var world = new World(config, new TileType[config.Width * config.Height]);
             world.TryPlace(BuildingType.Chest, ChestTile, Direction.Up);

@@ -192,8 +192,18 @@ namespace Factory.Presentation
             _hotbarText.text = _sb.ToString();
         }
 
+        /// <summary>
+        /// What the hotbar shows next to a building: how many of its item the player has
+        /// (e.g. "x3"), or for the crafting table, its raw cost (e.g. "5 madeiras").
+        /// </summary>
         private void AppendCost(BuildingType type)
         {
+            ItemType item = BuildingItems.ItemFor(type);
+            if (item != ItemType.None)
+            {
+                _sb.Append('x').Append(_world.PlayerInventory.Count(item));
+                return;
+            }
             bool first = true;
             foreach (BuildCost cost in _world.Config.BuildCosts)
             {
@@ -247,6 +257,10 @@ namespace Factory.Presentation
                 case ItemType.Coal: return "Carvão";
                 case ItemType.Wood: return "Madeira";
                 case ItemType.IronGear: return "Engrenagem de ferro";
+                case ItemType.Miner: return BuildingNames.Of(BuildingType.Miner);
+                case ItemType.Belt: return BuildingNames.Of(BuildingType.Belt);
+                case ItemType.Chest: return BuildingNames.Of(BuildingType.Chest);
+                case ItemType.Furnace: return BuildingNames.Of(BuildingType.Furnace);
                 default: return item.ToString();
             }
         }

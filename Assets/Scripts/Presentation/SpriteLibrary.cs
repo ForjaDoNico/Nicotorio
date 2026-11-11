@@ -124,6 +124,11 @@ namespace Factory.Presentation
                 case Factory.Simulation.ItemType.Coal: return CoalItem;
                 case Factory.Simulation.ItemType.Wood: return WoodItem;
                 case Factory.Simulation.ItemType.IronGear: return IronGearItem;
+                // Building items use the building's own sprite.
+                case Factory.Simulation.ItemType.Miner: return Miner;
+                case Factory.Simulation.ItemType.Belt: return Belt;
+                case Factory.Simulation.ItemType.Chest: return Chest;
+                case Factory.Simulation.ItemType.Furnace: return Furnace;
                 default: return IronOreItem;
             }
         }

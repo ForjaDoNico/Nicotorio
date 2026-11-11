@@ -11,6 +11,26 @@ namespace Factory.Simulation
         CraftingTable = 4,
     }
 
+    /// <summary>
+    /// Which item stands for which building. This is identity, not balance, so it is fixed here
+    /// rather than in WorldConfig. A building with no item (the crafting table) is paid only
+    /// through WorldConfig.BuildCosts.
+    /// </summary>
+    public static class BuildingItems
+    {
+        public static ItemType ItemFor(BuildingType type)
+        {
+            switch (type)
+            {
+                case BuildingType.Miner: return ItemType.Miner;
+                case BuildingType.Belt: return ItemType.Belt;
+                case BuildingType.Chest: return ItemType.Chest;
+                case BuildingType.Furnace: return ItemType.Furnace;
+                default: return ItemType.None;
+            }
+        }
+    }
+
     public enum PlaceResult : byte
     {
         Ok,

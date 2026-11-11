@@ -13,7 +13,7 @@ namespace Factory.Simulation.Tests
             var config = new WorldConfig
             {
                 Width = 16, Height = 10, OrePatchCount = 0, CoalPatchCount = 0,
-                BuildCosts = TestWorlds.NoCosts, BeltSpeed = 100, BeltItemSpacing = 250,
+                FreeBuilding = true, BeltSpeed = 100, BeltItemSpacing = 250,
             };
             var world = new World(config, new TileType[config.Width * config.Height]);
             world.TryPlace(BuildingType.Furnace, FurnaceTile, Direction.Right);

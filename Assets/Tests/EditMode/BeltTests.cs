@@ -15,7 +15,7 @@ namespace Factory.Simulation.Tests
             {
                 Width = 16, Height = 8, OrePatchCount = 0,
                 BeltSpeed = Speed, BeltItemSpacing = Spacing, MinerTicksPerItem = 20,
-                BuildCosts = TestWorlds.NoCosts,
+                FreeBuilding = true,
             };
             return new World(config, new TileType[config.Width * config.Height]);
         }

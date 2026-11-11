@@ -59,7 +59,7 @@ namespace Factory.Simulation.Tests
         {
             var config = new WorldConfig
             {
-                Width = 10, Height = 10, OrePatchCount = 0, BuildCosts = TestWorlds.NoCosts,
+                Width = 10, Height = 10, OrePatchCount = 0, FreeBuilding = true,
                 CraftingRecipes = new[]
                 {
                     new CraftingRecipe(7, new ItemAmount(ItemType.IronGear, 2), new ItemAmount(ItemType.Wood, 1)),

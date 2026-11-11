@@ -61,17 +61,24 @@ namespace Factory.Simulation
 
         // Building costs and the player's start.
         /// <summary>
-        /// What each building costs. Paid from the player's inventory on placement and
-        /// refunded in full on removal. One line per (building, item).
+        /// Raw-material costs for placing a building, refunded in full on removal. One line per
+        /// (building, item). Only the crafting table is here: every other building is placed from
+        /// its own item (see BuildingItems), which is crafted at the table. The table costs plain
+        /// wood so a run can always start.
         /// </summary>
         public BuildCost[] BuildCosts =
         {
             new BuildCost(BuildingType.CraftingTable, ItemType.Wood, 5),
-            new BuildCost(BuildingType.Furnace, ItemType.IronOre,   5),
-            new BuildCost(BuildingType.Miner,   ItemType.IronPlate, 3),
-            new BuildCost(BuildingType.Belt,    ItemType.IronPlate, 1),
-            new BuildCost(BuildingType.Chest,   ItemType.IronPlate, 2),
         };
+
+        /// <summary>
+        /// Sandbox switch: placing costs nothing and removing refunds no cost (contents are still
+        /// returned). Tests about other rules use it so they don't have to pay for buildings.
+        /// </summary>
+        public bool FreeBuilding = false;
+
+        /// <summary>Items the player starts with. Empty: everything starts from chopping trees.</summary>
+        public ItemAmount[] StartingInventory = { };
 
         // Crafting.
         /// <summary>
@@ -80,6 +87,13 @@ namespace Factory.Simulation
         public CraftingRecipe[] CraftingRecipes =
         {
             new CraftingRecipe(1, new ItemAmount(ItemType.IronGear, 1), new ItemAmount(ItemType.IronPlate, 2)),
+            new CraftingRecipe(2, new ItemAmount(ItemType.Chest, 1), new ItemAmount(ItemType.Wood, 4)),
+            new CraftingRecipe(3, new ItemAmount(ItemType.Furnace, 1),
+                new ItemAmount(ItemType.IronOre, 5), new ItemAmount(ItemType.Wood, 2)),
+            new CraftingRecipe(4, new ItemAmount(ItemType.Belt, 2),
+                new ItemAmount(ItemType.IronGear, 1), new ItemAmount(ItemType.IronPlate, 1)),
+            new CraftingRecipe(5, new ItemAmount(ItemType.Miner, 1),
+                new ItemAmount(ItemType.IronGear, 3), new ItemAmount(ItemType.IronPlate, 2), new ItemAmount(ItemType.Wood, 2)),
         };
 
         /// <summary>Max distance in tiles (Euclidean) from the player to a crafting table to use it.</summary>
@@ -92,9 +106,6 @@ namespace Factory.Simulation
                 if (recipe.Id == id) return recipe;
             return null;
         }
-
-        /// <summary>Items the player starts with. Empty: everything starts from hand mining.</summary>
-        public ItemAmount[] StartingInventory = { };
 
         /// <summary>Where the player starts. The generator always puts one ore patch near it.</summary>
         public GridPos PlayerSpawn => new GridPos(Width / 2, Height / 2);

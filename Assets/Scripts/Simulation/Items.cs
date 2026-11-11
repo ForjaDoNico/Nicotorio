@@ -11,6 +11,12 @@ namespace Factory.Simulation
         Coal = 3,
         Wood = 4,
         IronGear = 5,
+
+        // Buildings as items: crafted at the table, spent when placed, returned when removed.
+        Miner = 6,
+        Belt = 7,
+        Chest = 8,
+        Furnace = 9,
     }
 
     /// <summary>

@@ -12,7 +12,7 @@ namespace Factory.Simulation.Tests
             Width = 16, Height = 10, OrePatchCount = 0,
             FurnaceTicksPerItem = ticks, FurnaceInputCapacity = inCap, FurnaceOutputCapacity = outCap,
             MinerTicksPerItem = 20, BeltSpeed = 100, BeltItemSpacing = 250,
-                BuildCosts = TestWorlds.NoCosts,
+                FreeBuilding = true,
         };
 
         private static World MakeWorld(WorldConfig config = null)
