@@ -149,6 +149,16 @@ namespace Factory.Simulation
             return true;
         }
 
+        /// <summary>
+        /// Moves everything stored in the chest on pos into the player's inventory.
+        /// Returns how many items moved (0 if there is no chest there).
+        /// </summary>
+        public int TakeAllFromChest(GridPos pos)
+        {
+            if (!(GetBuilding(pos) is Chest chest)) return 0;
+            return chest.Contents.TransferAllTo(PlayerInventory);
+        }
+
         public Building GetBuilding(GridPos pos) =>
             _buildingsByPos.TryGetValue(pos, out Building building) ? building : null;
 

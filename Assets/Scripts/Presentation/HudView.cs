@@ -15,6 +15,10 @@ namespace Factory.Presentation
         private CommandInput _input;
         private Text _inventoryText;
         private Text _hotbarText;
+        private Text _hoverText;
+        private GameObject _hoverPanel;
+        private Chest _shownChest;
+        private int _shownChestVersion = -1;
         private int _shownVersion = -1;
         private int _shownSelectionVersion = -1;
         private readonly StringBuilder _sb = new StringBuilder();
@@ -34,6 +38,9 @@ namespace Factory.Presentation
             _inventoryText = MakePanel("InventoryPanel", new Vector2(0f, 1f), new Vector2(24f, -24f));
             _hotbarText = MakePanel("HotbarPanel", new Vector2(0.5f, 0f), new Vector2(0f, 24f));
             _hotbarText.alignment = TextAnchor.MiddleCenter;
+            _hoverText = MakePanel("HoverPanel", new Vector2(1f, 1f), new Vector2(-24f, -24f));
+            _hoverPanel = _hoverText.transform.parent.gameObject;
+            _hoverPanel.SetActive(false);
         }
 
         private Text MakePanel(string name, Vector2 anchor, Vector2 offset)
@@ -69,12 +76,41 @@ namespace Factory.Presentation
         {
             if (_world == null) return;
             RefreshHotbar();
+            RefreshHover();
             var inv = _world.PlayerInventory;
             if (inv.Version == _shownVersion) return;
             _shownVersion = inv.Version;
 
             _sb.Clear();
             _sb.Append("<b>Inventário</b>");
+            AppendStacks(inv);
+            _inventoryText.text = _sb.ToString();
+        }
+
+        /// <summary>Top-right panel with the contents of the chest under the mouse.</summary>
+        private void RefreshHover()
+        {
+            var chest = _world.InBounds(_input.HoverTile) ? _world.GetBuilding(_input.HoverTile) as Chest : null;
+            if (chest == null)
+            {
+                if (_shownChest != null) _hoverPanel.SetActive(false);
+                _shownChest = null;
+                return;
+            }
+            if (chest == _shownChest && chest.Contents.Version == _shownChestVersion) return;
+            _shownChest = chest;
+            _shownChestVersion = chest.Contents.Version;
+            _hoverPanel.SetActive(true);
+
+            _sb.Clear();
+            _sb.Append("<b>Baú</b>");
+            AppendStacks(chest.Contents);
+            _sb.Append("\n<size=24>Esq: pegar tudo</size>");
+            _hoverText.text = _sb.ToString();
+        }
+
+        private void AppendStacks(Inventory inv)
+        {
             bool any = false;
             foreach (var stack in inv.Stacks())
             {
@@ -82,7 +118,6 @@ namespace Factory.Presentation
                 any = true;
             }
             if (!any) _sb.Append("\n<i>vazio</i>");
-            _inventoryText.text = _sb.ToString();
         }
 
         private void RefreshHotbar()
@@ -102,7 +137,7 @@ namespace Factory.Presentation
                 if (selected) _sb.Append("</b></color>");
             }
             _sb.Append("\n<size=24>R: girar (").Append(BuildingNames.Of(_input.Facing)).Append(")    ")
-               .Append("Esq: construir    Dir: minerar    X: remover</size>");
+               .Append("Esq: construir / pegar do baú    Dir: minerar    X: remover</size>");
             _hotbarText.text = _sb.ToString();
         }
     }

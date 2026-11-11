@@ -13,7 +13,7 @@ namespace Factory.Presentation
     /// </summary>
     public sealed class CommandInput : MonoBehaviour
     {
-        private enum CommandKind : byte { Place, Remove }
+        private enum CommandKind : byte { Place, Remove, TakeFromChest }
 
         private struct Command
         {
@@ -84,6 +84,13 @@ namespace Factory.Presentation
                 SelectionVersion++;
             }
 
+            // Left click that starts on a chest takes its contents instead of building.
+            if (_place.WasPressedThisFrame() && _world.InBounds(HoverTile) && _world.GetBuilding(HoverTile) is Chest)
+            {
+                _pending.Add(new Command { Kind = CommandKind.TakeFromChest, Tile = HoverTile });
+                _lastPlaceTile = HoverTile; // the drag starts here; don't also try to build on it
+            }
+
             // Place: on press, then once per new tile while held.
             if (_place.IsPressed() && Selected.HasValue && _world.InBounds(HoverTile))
             {
@@ -124,8 +131,12 @@ namespace Factory.Presentation
         {
             foreach (Command c in _pending)
             {
-                if (c.Kind == CommandKind.Place) _world.TryPlace(c.Type, c.Tile, c.Facing);
-                else _world.TryRemove(c.Tile);
+                switch (c.Kind)
+                {
+                    case CommandKind.Place: _world.TryPlace(c.Type, c.Tile, c.Facing); break;
+                    case CommandKind.Remove: _world.TryRemove(c.Tile); break;
+                    case CommandKind.TakeFromChest: _world.TakeAllFromChest(c.Tile); break;
+                }
             }
             _pending.Clear();
 
