@@ -16,7 +16,7 @@ namespace Factory.Presentation
     /// </summary>
     public sealed class FurnaceWindow : MonoBehaviour
     {
-        /// <summary>Walking farther than this (in tiles) from the furnace closes the window.</summary>
+        /// <summary>The window opens only within this distance (in tiles) and closes beyond it.</summary>
         public const float CloseDistance = 6f;
 
         private const float SlotSize = 120f;
@@ -71,6 +71,8 @@ namespace Factory.Presentation
         public void Open(GridPos tile)
         {
             if (!(_world.GetBuilding(tile) is Furnace furnace)) return;
+            // Too far: it would close again next frame, so don't flash it open.
+            if (DistanceTo(tile) > CloseDistance) return;
             _tile = tile;
             _furnaceId = furnace.Id;
             _panel.SetActive(true);
@@ -79,14 +81,16 @@ namespace Factory.Presentation
 
         public void Close() => _panel.SetActive(false);
 
+        private float DistanceTo(GridPos tile) =>
+            Vector2.Distance(_player.Position, new Vector2(tile.X + 0.5f, tile.Y + 0.5f));
+
         private void Update()
         {
             if (_world == null || !IsOpen) return;
 
             var furnace = _world.GetBuilding(_tile) as Furnace;
             bool gone = furnace == null || furnace.Id != _furnaceId;
-            float distance = Vector2.Distance(_player.Position, new Vector2(_tile.X + 0.5f, _tile.Y + 0.5f));
-            if (gone || distance > CloseDistance || _close.WasPressedThisFrame())
+            if (gone || DistanceTo(_tile) > CloseDistance || _close.WasPressedThisFrame())
             {
                 Close();
                 return;
