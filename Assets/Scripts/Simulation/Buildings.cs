@@ -33,6 +33,15 @@ namespace Factory.Simulation
     public sealed class Miner : Building
     {
         public override BuildingType Type => BuildingType.Miner;
+
+        /// <summary>Ticks of digging toward the next item. Frozen while Output is held.</summary>
+        public int Progress { get; internal set; }
+
+        /// <summary>
+        /// The dug item waiting to leave through Front, or None. While it can't be delivered
+        /// the miner stalls: it holds at most one item and stops digging.
+        /// </summary>
+        public ItemType Output { get; internal set; }
     }
 
     public sealed class Belt : Building

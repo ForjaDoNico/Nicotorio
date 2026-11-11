@@ -20,6 +20,9 @@ namespace Factory.Presentation
         public Sprite Belt { get; }
         public Sprite Chest { get; }
 
+        // Items (on belts, in miner outputs): small, centered, transparent around.
+        public Sprite IronOreItem { get; }
+
         public SpriteLibrary()
         {
             Grass = MakeGrass(1);
@@ -31,7 +34,10 @@ namespace Factory.Presentation
             Miner = MakeMiner();
             Belt = MakeBelt();
             Chest = MakeChest();
+            IronOreItem = MakeOreItem();
         }
+
+        public Sprite ForItem(Factory.Simulation.ItemType item) => IronOreItem;
 
         public Sprite ForBuilding(Factory.Simulation.BuildingType type)
         {
@@ -102,6 +108,14 @@ namespace Factory.Presentation
             // Little backpack nub for silhouette.
             for (int x = 6; x <= 9; x++) Set(px, x, 13, Palette.Shadow);
             return ToSprite(px, "Player");
+        }
+
+        private static Sprite MakeOreItem()
+        {
+            var px = Fill(Palette.Clear);
+            DrawRock(px, 5, 5, 6, 6);
+            Set(px, 7, 7, Palette.OreHighlight);
+            return ToSprite(px, "IronOreItem");
         }
 
         private static Sprite MakeMiner()

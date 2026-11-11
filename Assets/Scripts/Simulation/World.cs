@@ -139,6 +139,7 @@ namespace Factory.Simulation
         {
             if (!_buildingsByPos.TryGetValue(pos, out Building building)) return false;
             if (building is Chest chest) chest.Contents.TransferAllTo(PlayerInventory);
+            if (building is Miner miner && miner.Output != ItemType.None) PlayerInventory.Add(miner.Output, 1);
 
             _buildingsByPos.Remove(pos);
             _buildings.Remove(building);
@@ -169,12 +170,52 @@ namespace Factory.Simulation
 
         // ---- simulation step ----------------------------------------------------------
 
+        /// <summary>
+        /// Advances one fixed step. Systems run in a fixed order and each one walks the
+        /// buildings in Id order, so the result never depends on dictionary or frame timing.
+        /// </summary>
         public void Tick()
         {
             if (!_minedSinceLastTick) _mineProgress = 0;
             _minedSinceLastTick = false;
 
+            TickMiners();
+
             TickCount++;
+        }
+
+        private void TickMiners()
+        {
+            foreach (Building building in _buildings)
+            {
+                if (!(building is Miner miner)) continue;
+
+                if (miner.Output == ItemType.None)
+                {
+                    miner.Progress++;
+                    if (miner.Progress < Config.MinerTicksPerItem) continue;
+                    miner.Progress = 0;
+                    miner.Output = TileYield.Of(GetTile(miner.Position));
+                }
+
+                if (TryInsert(miner.Front, miner.Output)) miner.Output = ItemType.None;
+            }
+        }
+
+        /// <summary>
+        /// Offers one item to whatever is on pos. Returns false if nothing there accepts it,
+        /// in which case the caller keeps the item.
+        /// </summary>
+        private bool TryInsert(GridPos pos, ItemType item)
+        {
+            switch (GetBuilding(pos))
+            {
+                case Chest chest:
+                    chest.Contents.Add(item, 1);
+                    return true;
+                default:
+                    return false; // Belts start accepting items in stage 5.
+            }
         }
     }
 }

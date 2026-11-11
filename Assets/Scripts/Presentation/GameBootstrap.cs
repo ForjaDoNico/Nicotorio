@@ -45,6 +45,10 @@ namespace Factory.Presentation
             buildingView.transform.SetParent(root.transform, false);
             buildingView.Init(world, sprites);
 
+            var itemView = new GameObject("Items").AddComponent<ItemView>();
+            itemView.transform.SetParent(root.transform, false);
+            itemView.Init(world, sprites);
+
             var player = new GameObject("Player").AddComponent<PlayerController>();
             player.transform.SetParent(root.transform, false);
             player.Init(world, sprites);
