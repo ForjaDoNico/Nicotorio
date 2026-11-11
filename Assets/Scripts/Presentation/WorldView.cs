@@ -9,7 +9,8 @@ namespace Factory.Presentation
     {
         private World _world;
         private Tilemap _tilemap;
-        private Tile _grass, _grassAlt, _ore, _coal;
+        private Tile _grass, _grassAlt, _ore, _coal, _tree;
+        private int _shownTilesVersion;
 
         public void Init(World world, SpriteLibrary sprites)
         {
@@ -28,12 +29,20 @@ namespace Factory.Presentation
             _grassAlt = MakeTile(sprites.GrassAlt);
             _ore = MakeTile(sprites.IronOre);
             _coal = MakeTile(sprites.CoalOre);
+            _tree = MakeTile(sprites.Tree);
 
             RedrawAll();
         }
 
+        private void LateUpdate()
+        {
+            // Tiles change rarely (a tree is chopped down): a full redraw is cheap enough then.
+            if (_world != null && _world.TilesVersion != _shownTilesVersion) RedrawAll();
+        }
+
         public void RedrawAll()
         {
+            _shownTilesVersion = _world.TilesVersion;
             int count = _world.Width * _world.Height;
             var positions = new Vector3Int[count];
             var tiles = new TileBase[count];
@@ -52,6 +61,7 @@ namespace Factory.Presentation
         {
             if (_world.GetTile(p) == TileType.IronOre) return _ore;
             if (_world.GetTile(p) == TileType.CoalOre) return _coal;
+            if (_world.GetTile(p) == TileType.Tree) return _tree;
             // Checker-ish variation so the grass doesn't read as one flat sheet.
             return ((p.X * 7 + p.Y * 13) % 5 == 0) ? _grassAlt : _grass;
         }

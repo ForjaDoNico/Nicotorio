@@ -9,6 +9,7 @@ namespace Factory.Simulation
         IronOre = 1,
         IronPlate = 2,
         Coal = 3,
+        Wood = 4,
     }
 
     /// <summary>
@@ -117,10 +118,26 @@ namespace Factory.Simulation
         Produced,
     }
 
+    /// <summary>
+    /// What a tile gives. The hand and the miner are separate on purpose: the player can chop
+    /// trees, but a miner only extracts ore.
+    /// </summary>
     public static class TileYield
     {
-        /// <summary>The item a tile gives when mined, or None if it can't be mined.</summary>
-        public static ItemType Of(TileType tile)
+        /// <summary>The item the player gets by hand-mining (or chopping) this tile, or None.</summary>
+        public static ItemType ForHand(TileType tile)
+        {
+            switch (tile)
+            {
+                case TileType.IronOre: return ItemType.IronOre;
+                case TileType.CoalOre: return ItemType.Coal;
+                case TileType.Tree: return ItemType.Wood;
+                default: return ItemType.None;
+            }
+        }
+
+        /// <summary>The item a miner placed on this tile extracts, or None (the miner can't go there).</summary>
+        public static ItemType ForMiner(TileType tile)
         {
             switch (tile)
             {

@@ -42,6 +42,7 @@ namespace Factory.Simulation
             switch (item)
             {
                 case ItemType.Coal: return config.CoalBurnTicks;
+                case ItemType.Wood: return config.WoodBurnTicks;
                 default: return 0;
             }
         }

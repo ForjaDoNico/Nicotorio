@@ -8,12 +8,15 @@ namespace Factory.Simulation
             var tiles = new TileType[config.Width * config.Height];
             var rng = new DeterministicRandom(config.Seed);
 
-            // Iron first, so adding later resources never moves the iron patches.
+            // Iron first, then coal, then trees: each new resource is stamped after the older ones
+            // and only on grass, so adding one never moves the patches that already exist.
             var spawn = config.PlayerSpawn;
             StampPatches(config, tiles, rng, TileType.IronOre, config.OrePatchCount,
                 config.OrePatchMinRadius, config.OrePatchMaxRadius, new GridPos(spawn.X + 6, spawn.Y + 3));
             StampPatches(config, tiles, rng, TileType.CoalOre, config.CoalPatchCount,
                 config.CoalPatchMinRadius, config.CoalPatchMaxRadius, new GridPos(spawn.X - 6, spawn.Y - 4));
+            StampPatches(config, tiles, rng, TileType.Tree, config.TreePatchCount,
+                config.TreePatchMinRadius, config.TreePatchMaxRadius, new GridPos(spawn.X - 4, spawn.Y + 6));
             return tiles;
         }
 

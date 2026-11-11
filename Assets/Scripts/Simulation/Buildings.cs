@@ -15,6 +15,8 @@ namespace Factory.Simulation
         Ok,
         OutOfBounds,
         Occupied,
+        /// <summary>Something on the ground (a tree) is in the way.</summary>
+        Blocked,
         RequiresOre,
         NotEnoughItems,
     }

@@ -56,5 +56,6 @@ namespace Factory.Simulation
         Grass = 0,
         IronOre = 1,
         CoalOre = 2,
+        Tree = 3,
     }
 }

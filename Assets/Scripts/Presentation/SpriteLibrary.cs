@@ -34,12 +34,15 @@ namespace Factory.Presentation
             ("item_iron_plate", DrawPlateItem),
             ("coal_ore", DrawCoalOre),
             ("item_coal", DrawCoalItem),
+            ("tree", DrawTree),
+            ("item_wood", DrawWoodItem),
         };
 
         public Sprite Grass { get; }
         public Sprite GrassAlt { get; }
         public Sprite IronOre { get; }
         public Sprite CoalOre { get; }
+        public Sprite Tree { get; }
         public Sprite Player { get; }
         public Sprite CursorFrame { get; }
 
@@ -56,6 +59,7 @@ namespace Factory.Presentation
         public Sprite IronOreItem { get; }
         public Sprite IronPlateItem { get; }
         public Sprite CoalItem { get; }
+        public Sprite WoodItem { get; }
 
         /// <summary>File names that had no PNG and were drawn in code this run.</summary>
         public List<string> Fallbacks { get; } = new List<string>();
@@ -89,6 +93,8 @@ namespace Factory.Presentation
             IronPlateItem = byName["item_iron_plate"];
             CoalOre = byName["coal_ore"];
             CoalItem = byName["item_coal"];
+            Tree = byName["tree"];
+            WoodItem = byName["item_wood"];
             WhitePixel = ToSprite(Fill(new Color32(255, 255, 255, 255)), "white_pixel");
         }
 
@@ -109,6 +115,7 @@ namespace Factory.Presentation
             {
                 case Factory.Simulation.ItemType.IronPlate: return IronPlateItem;
                 case Factory.Simulation.ItemType.Coal: return CoalItem;
+                case Factory.Simulation.ItemType.Wood: return WoodItem;
                 default: return IronOreItem;
             }
         }
@@ -157,6 +164,38 @@ namespace Factory.Presentation
             DrawRock(px, 8, 7, 6, 6, Palette.Coal, Palette.CoalHighlight);
             DrawRock(px, 10, 1, 4, 4, Palette.Coal, Palette.CoalHighlight);
             DrawRock(px, 3, 10, 4, 4, Palette.Coal, Palette.CoalHighlight);
+            return px;
+        }
+
+        private static Color32[] DrawTree()
+        {
+            var px = DrawGrass(3);
+            // Trunk.
+            for (int y = 1; y <= 5; y++)
+            for (int x = 7; x <= 8; x++)
+                Set(px, x, y, y == 1 ? Palette.Shadow : x == 7 ? Palette.BarkLight : Palette.Bark);
+            // Round canopy: outline, leaf body, a light patch on the upper left.
+            for (int y = 4; y <= 15; y++)
+            for (int x = 1; x <= 14; x++)
+            {
+                int dx = 2 * x - 15, dy = 2 * y - 19; // centre (7.5, 9.5), doubled to stay in integers
+                int d2 = dx * dx + dy * dy;
+                if (d2 > 170) continue;
+                Color32 c = d2 > 120 ? Palette.Shadow : Palette.Leaf;
+                if (d2 <= 120 && dx < -2 && dy > 2) c = Palette.LeafLight;
+                Set(px, x, y, c);
+            }
+            return px;
+        }
+
+        private static Color32[] DrawWoodItem()
+        {
+            var px = Fill(Palette.Clear);
+            // A short log lying sideways with a light cut end on the right.
+            Box(px, 3, 6, 9, 5, Palette.Shadow, Palette.Bark);
+            for (int x = 4; x <= 10; x++) Set(px, x, 9, Palette.BarkLight);
+            Box(px, 10, 6, 3, 5, Palette.Shadow, Palette.PathLight);
+            Set(px, 11, 8, Palette.Bark);
             return px;
         }
 

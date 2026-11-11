@@ -83,7 +83,7 @@ namespace Factory.Presentation
                 return;
             }
 
-            bool mineable = TileYield.Of(_world.GetTile(tile)) != ItemType.None;
+            bool mineable = TileYield.ForHand(_world.GetTile(tile)) != ItemType.None;
             bool inReach = World.IsWithinReach(_player.Tile, tile, _world.Config.HandMineReach);
             _frame.color = !mineable ? Neutral : inReach ? CanMine : TooFar;
 

@@ -17,12 +17,19 @@ namespace Factory.Simulation
         public int CoalPatchCount = 7;
         public int CoalPatchMinRadius = 2;
         public int CoalPatchMaxRadius = 4;
+        public int TreePatchCount = 10;
+        public int TreePatchMinRadius = 2;
+        public int TreePatchMaxRadius = 4;
 
         // Hand mining.
         /// <summary>Consecutive ticks of holding mine on one tile to get one item (10 = 0.5 s).</summary>
         public int HandMineTicksPerItem = 10;
         /// <summary>Max distance in tiles (Euclidean, tile centers) from the player to the mined tile.</summary>
         public int HandMineReach = 3;
+        /// <summary>Consecutive ticks of holding mine on a tree to get one wood (15 = 0.75 s).</summary>
+        public int HandChopTicksPerItem = 15;
+        /// <summary>Wood a tree gives before it turns into grass.</summary>
+        public int WoodPerTree = 4;
 
         // Buildings.
         /// <summary>Ticks a miner needs to dig one item (20 = 1 item per second).</summary>
@@ -42,6 +49,8 @@ namespace Factory.Simulation
         /// Fuel only burns while the furnace is actually smelting.
         /// </summary>
         public int CoalBurnTicks = 160;
+        /// <summary>Ticks of smelting one wood powers (80 = 2 plates). Lets furnaces run before coal.</summary>
+        public int WoodBurnTicks = 80;
 
         // Belts. Item positions along a belt are integers from 0 (entry edge) to
         // Belt.Length (exit edge), so belt motion is exact and deterministic.

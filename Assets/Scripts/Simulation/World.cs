@@ -10,6 +10,8 @@ namespace Factory.Simulation
     public sealed class World
     {
         private readonly TileType[] _tiles;
+        // Wood left in each tree tile, parallel to _tiles (0 for anything that isn't a tree).
+        private readonly int[] _woodLeft;
 
         // Hand-mining state. Progress survives only while MineStep is issued every tick
         // on the same tile; a tick without a MineStep (button released) resets it.
@@ -36,7 +38,11 @@ namespace Factory.Simulation
         public GridPos MiningTarget => _mineTarget;
 
         /// <summary>0..1 progress toward the next hand-mined item.</summary>
-        public float MiningProgress01 => (float)_mineProgress / Config.HandMineTicksPerItem;
+        public float MiningProgress01 =>
+            InBounds(_mineTarget) ? (float)_mineProgress / HandTicksFor(GetTile(_mineTarget)) : 0f;
+
+        /// <summary>Bumped whenever a tile changes (e.g. a chopped tree turns into grass).</summary>
+        public int TilesVersion { get; private set; }
 
         /// <summary>All buildings, ordered by Id (placement order).</summary>
         public IReadOnlyList<Building> Buildings => _buildings;
@@ -58,6 +64,9 @@ namespace Factory.Simulation
             if (tiles == null || tiles.Length != Width * Height)
                 throw new ArgumentException("Tile array must be Width * Height long.", nameof(tiles));
             _tiles = tiles;
+            _woodLeft = new int[tiles.Length];
+            for (int i = 0; i < tiles.Length; i++)
+                if (tiles[i] == TileType.Tree) _woodLeft[i] = config.WoodPerTree;
 
             foreach (ItemAmount start in config.StartingInventory)
                 if (start.Count > 0) PlayerInventory.Add(start.Item, start.Count);
@@ -66,7 +75,7 @@ namespace Factory.Simulation
         /// <summary>A world with no ore at all; tests paint the tiles they need.</summary>
         public static World CreateEmpty(int width, int height)
         {
-            var config = new WorldConfig { Width = width, Height = height, OrePatchCount = 0, CoalPatchCount = 0 };
+            var config = new WorldConfig { Width = width, Height = height, OrePatchCount = 0, CoalPatchCount = 0, TreePatchCount = 0 };
             return new World(config, new TileType[width * height]);
         }
 
@@ -81,8 +90,22 @@ namespace Factory.Simulation
         public void SetTile(GridPos p, TileType type)
         {
             if (!InBounds(p)) throw new ArgumentOutOfRangeException(nameof(p), p.ToString());
-            _tiles[p.Y * Width + p.X] = type;
+            int i = p.Y * Width + p.X;
+            _tiles[i] = type;
+            _woodLeft[i] = type == TileType.Tree ? Config.WoodPerTree : 0;
+            TilesVersion++;
         }
+
+        /// <summary>Wood a tree tile still holds (0 if it is not a tree).</summary>
+        public int WoodLeft(GridPos p)
+        {
+            if (!InBounds(p)) throw new ArgumentOutOfRangeException(nameof(p), p.ToString());
+            return _woodLeft[p.Y * Width + p.X];
+        }
+
+        /// <summary>Ticks of holding mine on this tile per item: trees are chopped, ore is mined.</summary>
+        public int HandTicksFor(TileType tile) =>
+            tile == TileType.Tree ? Config.HandChopTicksPerItem : Config.HandMineTicksPerItem;
 
         // ---- commands -----------------------------------------------------------------
 
@@ -94,7 +117,8 @@ namespace Factory.Simulation
         {
             if (!InBounds(target)) return MineResult.NotMineable;
             if (_buildingsByPos.ContainsKey(target)) return MineResult.NotMineable;
-            ItemType item = TileYield.Of(GetTile(target));
+            TileType tile = GetTile(target);
+            ItemType item = TileYield.ForHand(tile);
             if (item == ItemType.None) return MineResult.NotMineable;
             if (!IsWithinReach(playerTile, target, Config.HandMineReach)) return MineResult.OutOfReach;
 
@@ -103,10 +127,21 @@ namespace Factory.Simulation
             _minedSinceLastTick = true;
 
             _mineProgress++;
-            if (_mineProgress < Config.HandMineTicksPerItem) return MineResult.InProgress;
+            if (_mineProgress < HandTicksFor(tile)) return MineResult.InProgress;
 
             _mineProgress = 0;
             PlayerInventory.Add(item, 1);
+            if (tile == TileType.Tree)
+            {
+                int i = target.Y * Width + target.X;
+                _woodLeft[i]--;
+                if (_woodLeft[i] <= 0)
+                {
+                    _tiles[i] = TileType.Grass;
+                    _woodLeft[i] = 0;
+                    TilesVersion++;
+                }
+            }
             return MineResult.Produced;
         }
 
@@ -115,7 +150,8 @@ namespace Factory.Simulation
         {
             if (!InBounds(pos)) return PlaceResult.OutOfBounds;
             if (_buildingsByPos.ContainsKey(pos)) return PlaceResult.Occupied;
-            if (type == BuildingType.Miner && TileYield.Of(GetTile(pos)) == ItemType.None) return PlaceResult.RequiresOre;
+            if (GetTile(pos) == TileType.Tree) return PlaceResult.Blocked;
+            if (type == BuildingType.Miner && TileYield.ForMiner(GetTile(pos)) == ItemType.None) return PlaceResult.RequiresOre;
             if (!CanAfford(type)) return PlaceResult.NotEnoughItems;
             return PlaceResult.Ok;
         }
@@ -287,7 +323,7 @@ namespace Factory.Simulation
                     miner.Progress++;
                     if (miner.Progress < Config.MinerTicksPerItem) continue;
                     miner.Progress = 0;
-                    miner.Output = TileYield.Of(GetTile(miner.Position));
+                    miner.Output = TileYield.ForMiner(GetTile(miner.Position));
                 }
 
                 if (TryInsert(miner.Front, miner.Output)) miner.Output = ItemType.None;

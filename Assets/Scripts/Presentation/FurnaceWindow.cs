@@ -111,14 +111,15 @@ namespace Factory.Presentation
             bool lit = f.BurnTicksLeft > 0;
             _status.text =
                 f.Input.IsEmpty ? "Sem minério" :
-                !lit && f.Fuel.IsEmpty ? "Sem carvão" :
+                !lit && f.Fuel.IsEmpty ? "Sem combustível" :
                 f.Output.Count >= cfg.FurnaceOutputCapacity ? "Saída cheia" :
                 "Fundindo";
         }
 
-        private static void SetSlot(Slot slot, ItemSlot data, int capacity, ItemType usual)
+        private void SetSlot(Slot slot, ItemSlot data, int capacity, ItemType usual)
         {
             slot.Count.text = data.Count + "/" + capacity;
+            slot.Icon.sprite = _sprites.ForItem(data.IsEmpty ? usual : data.Item); // e.g. wood or coal as fuel
             // The icon always shows what goes there; it is faded while the slot is empty.
             slot.Icon.color = data.IsEmpty ? new Color(1f, 1f, 1f, 0.3f) : Color.white;
         }
@@ -147,7 +148,7 @@ namespace Factory.Presentation
 
             // [Ore] [Coal] --progress--> [Plates], with the coal's burn bar under its slot.
             _ore = MakeSlot("Minério", _sprites.ForItem(ItemType.IronOre), new Vector2(-230f, 10f), FurnaceAction.LoadInput);
-            _coal = MakeSlot("Carvão", _sprites.ForItem(ItemType.Coal), new Vector2(-90f, 10f), FurnaceAction.LoadFuel);
+            _coal = MakeSlot("Combustível", _sprites.ForItem(ItemType.Coal), new Vector2(-90f, 10f), FurnaceAction.LoadFuel);
             _plates = MakeSlot("Placas", _sprites.ForItem(ItemType.IronPlate), new Vector2(230f, 10f), FurnaceAction.TakeOutput);
 
             _progressFill = Bar("Progress", new Vector2(70f, 10f), new Vector2(140f, 16f), Palette.Accent);
@@ -155,7 +156,7 @@ namespace Factory.Presentation
             _fuelFill = Bar("Fuel", new Vector2(-90f, -70f), new Vector2(SlotSize, 12f), Palette.Fire);
             Label(_panel.transform, "chama", new Vector2(-90f, -92f), 18, TextAnchor.MiddleCenter);
 
-            var hint = Label(_panel.transform, "Clique: colocar minério / carvão · pegar placas    Esc/E: fechar",
+            var hint = Label(_panel.transform, "Clique: colocar minério / combustível (carvão ou madeira) · pegar placas    Esc/E: fechar",
                 new Vector2(0f, 14f), 18, TextAnchor.LowerCenter, bottom: true);
             hint.color = Palette.Disabled;
         }
