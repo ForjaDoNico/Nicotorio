@@ -19,6 +19,11 @@ namespace Factory.Presentation
         public static readonly Color32 Props = Hex(0x3E6B6E);
         public static readonly Color32 Shadow = Hex(0x2B2440);
         public static readonly Color32 Accent = Hex(0xF2C14E);
+        public static readonly Color32 Brick = Hex(0x8A4B3C);
+        public static readonly Color32 BrickDark = Hex(0x5E3029);
+        public static readonly Color32 Fire = Hex(0xF28C38);
+        public static readonly Color32 Plate = Hex(0xB8BCCB);
+        public static readonly Color32 PlateDark = Hex(0x7D8296);
         public static readonly Color32 Clear = new Color32(0, 0, 0, 0);
 
         /// <summary>Tint for a building preview that can't be placed.</summary>

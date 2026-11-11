@@ -13,7 +13,7 @@ namespace Factory.Presentation
     /// </summary>
     public sealed class CommandInput : MonoBehaviour
     {
-        private enum CommandKind : byte { Place, Remove, TakeFromChest }
+        private enum CommandKind : byte { Place, Remove, TakeFromChest, InteractWithFurnace }
 
         private struct Command
         {
@@ -27,7 +27,7 @@ namespace Factory.Presentation
         private PlayerController _player;
         private Camera _camera;
 
-        private InputAction _mine, _place, _remove, _rotate, _select1, _select2, _select3;
+        private InputAction _mine, _place, _remove, _rotate, _select1, _select2, _select3, _select4;
         private readonly List<Command> _pending = new List<Command>();
 
         // Drag-building: while a button is held, each new tile under the mouse gets one command.
@@ -59,6 +59,7 @@ namespace Factory.Presentation
             _select1 = Button("Select1", "<Keyboard>/1");
             _select2 = Button("Select2", "<Keyboard>/2");
             _select3 = Button("Select3", "<Keyboard>/3");
+            _select4 = Button("Select4", "<Keyboard>/4");
 
             runner.BeforeTick += ApplyCommands;
         }
@@ -78,17 +79,25 @@ namespace Factory.Presentation
             if (_select1.WasPressedThisFrame()) ToggleSelect(BuildingType.Miner);
             if (_select2.WasPressedThisFrame()) ToggleSelect(BuildingType.Belt);
             if (_select3.WasPressedThisFrame()) ToggleSelect(BuildingType.Chest);
+            if (_select4.WasPressedThisFrame()) ToggleSelect(BuildingType.Furnace);
             if (_rotate.WasPressedThisFrame())
             {
                 Facing = Facing.RotateClockwise();
                 SelectionVersion++;
             }
 
-            // Left click that starts on a chest takes its contents instead of building.
-            if (_place.WasPressedThisFrame() && _world.InBounds(HoverTile) && _world.GetBuilding(HoverTile) is Chest)
+            // Left click that starts on a chest or furnace interacts with it instead of building.
+            if (_place.WasPressedThisFrame() && _world.InBounds(HoverTile))
             {
-                _pending.Add(new Command { Kind = CommandKind.TakeFromChest, Tile = HoverTile });
-                _lastPlaceTile = HoverTile; // the drag starts here; don't also try to build on it
+                Building clicked = _world.GetBuilding(HoverTile);
+                CommandKind? interact = clicked is Chest ? CommandKind.TakeFromChest
+                    : clicked is Furnace ? CommandKind.InteractWithFurnace
+                    : (CommandKind?)null;
+                if (interact.HasValue)
+                {
+                    _pending.Add(new Command { Kind = interact.Value, Tile = HoverTile });
+                    _lastPlaceTile = HoverTile; // the drag starts here; don't also try to build on it
+                }
             }
 
             // Place: on press, then once per new tile while held.
@@ -136,6 +145,7 @@ namespace Factory.Presentation
                     case CommandKind.Place: _world.TryPlace(c.Type, c.Tile, c.Facing); break;
                     case CommandKind.Remove: _world.TryRemove(c.Tile); break;
                     case CommandKind.TakeFromChest: _world.TakeAllFromChest(c.Tile); break;
+                    case CommandKind.InteractWithFurnace: _world.InteractWithFurnace(c.Tile); break;
                 }
             }
             _pending.Clear();
@@ -163,6 +173,7 @@ namespace Factory.Presentation
             _select1?.Dispose();
             _select2?.Dispose();
             _select3?.Dispose();
+            _select4?.Dispose();
         }
     }
 }

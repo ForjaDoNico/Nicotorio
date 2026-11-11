@@ -25,6 +25,14 @@ namespace Factory.Simulation
         /// <summary>Ticks a miner needs to dig one item (20 = 1 item per second).</summary>
         public int MinerTicksPerItem = 20;
 
+        // Furnaces.
+        /// <summary>Ticks to smelt one item (40 = 2 s per plate).</summary>
+        public int FurnaceTicksPerItem = 40;
+        /// <summary>Most ore a furnace's input slot holds.</summary>
+        public int FurnaceInputCapacity = 10;
+        /// <summary>Most plates a furnace's output slot holds before it stops smelting.</summary>
+        public int FurnaceOutputCapacity = 10;
+
         // Belts. Item positions along a belt are integers from 0 (entry edge) to
         // Belt.Length (exit edge), so belt motion is exact and deterministic.
         /// <summary>Distance an item moves per tick (75 = 1.5 tiles per second).</summary>

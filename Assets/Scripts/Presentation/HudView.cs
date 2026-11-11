@@ -17,8 +17,8 @@ namespace Factory.Presentation
         private Text _hotbarText;
         private Text _hoverText;
         private GameObject _hoverPanel;
-        private Chest _shownChest;
-        private int _shownChestVersion = -1;
+        private Building _shownHover;
+        private long _shownHoverSignature = -1;
         private int _shownVersion = -1;
         private int _shownSelectionVersion = -1;
         private readonly StringBuilder _sb = new StringBuilder();
@@ -87,26 +87,59 @@ namespace Factory.Presentation
             _inventoryText.text = _sb.ToString();
         }
 
-        /// <summary>Top-right panel with the contents of the chest under the mouse.</summary>
+        /// <summary>Top-right panel describing the chest or furnace under the mouse.</summary>
         private void RefreshHover()
         {
-            var chest = _world.InBounds(_input.HoverTile) ? _world.GetBuilding(_input.HoverTile) as Chest : null;
-            if (chest == null)
+            Building hovered = _world.InBounds(_input.HoverTile) ? _world.GetBuilding(_input.HoverTile) : null;
+            long signature = SignatureOf(hovered);
+            if (signature < 0)
             {
-                if (_shownChest != null) _hoverPanel.SetActive(false);
-                _shownChest = null;
+                if (_shownHover != null) _hoverPanel.SetActive(false);
+                _shownHover = null;
                 return;
             }
-            if (chest == _shownChest && chest.Contents.Version == _shownChestVersion) return;
-            _shownChest = chest;
-            _shownChestVersion = chest.Contents.Version;
+            if (hovered == _shownHover && signature == _shownHoverSignature) return;
+            _shownHover = hovered;
+            _shownHoverSignature = signature;
             _hoverPanel.SetActive(true);
 
             _sb.Clear();
-            _sb.Append("<b>Baú</b>");
-            AppendStacks(chest.Contents);
-            _sb.Append("\n<size=24>Esq: pegar tudo</size>");
+            if (hovered is Chest chest)
+            {
+                _sb.Append("<b>Baú</b>");
+                AppendStacks(chest.Contents);
+                _sb.Append("\n<size=24>Esq: pegar tudo</size>");
+            }
+            else if (hovered is Furnace furnace)
+            {
+                var cfg = _world.Config;
+                _sb.Append("<b>Fornalha</b>");
+                _sb.Append("\nEntrada: ");
+                AppendSlot(furnace.Input, cfg.FurnaceInputCapacity, ItemType.IronOre);
+                _sb.Append("\nSaída: ");
+                AppendSlot(furnace.Output, cfg.FurnaceOutputCapacity, ItemType.IronPlate);
+                int percent = furnace.Progress * 100 / cfg.FurnaceTicksPerItem;
+                _sb.Append("\nFundindo: ").Append(percent).Append('%');
+                _sb.Append("\n<size=24>Esq: abastecer com minério / pegar placas</size>");
+            }
             _hoverText.text = _sb.ToString();
+        }
+
+        /// <summary>Changes whenever what the hover panel shows changes; -1 when there is no panel.</summary>
+        private static long SignatureOf(Building b)
+        {
+            switch (b)
+            {
+                case Chest chest: return chest.Contents.Version;
+                case Furnace f: return ((long)f.Input.Count << 40) | ((long)f.Output.Count << 20) | (uint)f.Progress;
+                default: return -1;
+            }
+        }
+
+        private void AppendSlot(ItemSlot slot, int capacity, ItemType usual)
+        {
+            _sb.Append(ItemNames.Of(slot.IsEmpty ? usual : slot.Item))
+               .Append(' ').Append(slot.Count).Append('/').Append(capacity);
         }
 
         private void AppendStacks(Inventory inv)
@@ -127,9 +160,9 @@ namespace Factory.Presentation
 
             string accent = "#" + ColorUtility.ToHtmlStringRGB(Palette.Accent);
             _sb.Clear();
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < BuildingNames.All.Length; i++)
             {
-                var type = (BuildingType)i;
+                var type = BuildingNames.All[i];
                 bool selected = _input.Selected == type;
                 if (i > 0) _sb.Append("    ");
                 if (selected) _sb.Append("<color=").Append(accent).Append("><b>");
@@ -137,19 +170,24 @@ namespace Factory.Presentation
                 if (selected) _sb.Append("</b></color>");
             }
             _sb.Append("\n<size=24>R: girar (").Append(BuildingNames.Of(_input.Facing)).Append(")    ")
-               .Append("Esq: construir / pegar do baú    Dir: minerar    X: remover</size>");
+               .Append("Esq: construir / usar baú ou fornalha    Dir: minerar    X: remover</size>");
             _hotbarText.text = _sb.ToString();
         }
     }
 
     public static class BuildingNames
     {
+        /// <summary>Hotbar order; index + 1 is the number key.</summary>
+        public static readonly BuildingType[] All =
+            { BuildingType.Miner, BuildingType.Belt, BuildingType.Chest, BuildingType.Furnace };
+
         public static string Of(BuildingType type)
         {
             switch (type)
             {
                 case BuildingType.Miner: return "Mineradora";
                 case BuildingType.Belt: return "Esteira";
+                case BuildingType.Furnace: return "Fornalha";
                 default: return "Baú";
             }
         }
@@ -173,6 +211,7 @@ namespace Factory.Presentation
             switch (item)
             {
                 case ItemType.IronOre: return "Minério de ferro";
+                case ItemType.IronPlate: return "Placa de ferro";
                 default: return item.ToString();
             }
         }

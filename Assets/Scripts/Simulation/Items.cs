@@ -7,6 +7,40 @@ namespace Factory.Simulation
     {
         None = 0,
         IronOre = 1,
+        IronPlate = 2,
+    }
+
+    /// <summary>
+    /// A single-item slot with a quantity, like a furnace's input or output. Holds one item
+    /// type at a time; Item is None whenever Count is 0.
+    /// </summary>
+    public sealed class ItemSlot
+    {
+        public ItemType Item { get; private set; }
+        public int Count { get; private set; }
+
+        public bool IsEmpty => Count == 0;
+
+        /// <summary>Whether amount of item fits without exceeding capacity or mixing types.</summary>
+        public bool CanAdd(ItemType item, int amount, int capacity) =>
+            item != ItemType.None && (IsEmpty || Item == item) && Count + amount <= capacity;
+
+        internal void Add(ItemType item, int amount)
+        {
+            if (item == ItemType.None) throw new ArgumentException("Cannot store ItemType.None.", nameof(item));
+            if (!IsEmpty && Item != item) throw new InvalidOperationException($"Slot holds {Item}, not {item}.");
+            Item = item;
+            Count += amount;
+        }
+
+        /// <summary>Removes up to amount; returns how many were removed.</summary>
+        internal int Take(int amount)
+        {
+            int taken = Math.Min(amount, Count);
+            Count -= taken;
+            if (Count == 0) Item = ItemType.None;
+            return taken;
+        }
     }
 
     /// <summary>Item -> quantity. Enumerates in ItemType order so output is deterministic.</summary>

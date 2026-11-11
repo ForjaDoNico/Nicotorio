@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Factory.Presentation
 {
     /// <summary>
-    /// Draws items that live inside buildings: a miner's held output and belt contents.
+    /// Draws items that live inside buildings: miner and furnace outputs and belt contents.
     /// Items are simulation data, not GameObjects: every frame this view reuses a pool of
     /// SpriteRenderers, one per visible item, and hides the rest.
     /// </summary>
@@ -37,6 +37,11 @@ namespace Factory.Presentation
                     // Waiting at the output edge, between the miner and the tile in front.
                     GridPos o = miner.Facing.ToOffset();
                     Draw(miner.Output, b.Position.X + 0.5f + o.X * 0.5f, b.Position.Y + 0.5f + o.Y * 0.5f);
+                }
+                else if (b is Furnace furnace && !furnace.Output.IsEmpty)
+                {
+                    GridPos o = furnace.Facing.ToOffset();
+                    Draw(furnace.Output.Item, b.Position.X + 0.5f + o.X * 0.5f, b.Position.Y + 0.5f + o.Y * 0.5f);
                 }
                 else if (b is Belt belt)
                 {

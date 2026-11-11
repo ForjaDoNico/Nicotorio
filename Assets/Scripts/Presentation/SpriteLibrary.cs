@@ -30,6 +30,8 @@ namespace Factory.Presentation
             ("belt", DrawBelt),
             ("chest", DrawChest),
             ("item_iron_ore", DrawOreItem),
+            ("furnace", DrawFurnace),
+            ("item_iron_plate", DrawPlateItem),
         };
 
         public Sprite Grass { get; }
@@ -45,9 +47,11 @@ namespace Factory.Presentation
         public Sprite Miner { get; }
         public Sprite Belt { get; }
         public Sprite Chest { get; }
+        public Sprite Furnace { get; }
 
         // Items (on belts, in miner outputs): small, centered, transparent around.
         public Sprite IronOreItem { get; }
+        public Sprite IronPlateItem { get; }
 
         /// <summary>File names that had no PNG and were drawn in code this run.</summary>
         public List<string> Fallbacks { get; } = new List<string>();
@@ -77,6 +81,8 @@ namespace Factory.Presentation
             Belt = byName["belt"];
             Chest = byName["chest"];
             IronOreItem = byName["item_iron_ore"];
+            Furnace = byName["furnace"];
+            IronPlateItem = byName["item_iron_plate"];
             WhitePixel = ToSprite(Fill(new Color32(255, 255, 255, 255)), "white_pixel");
         }
 
@@ -86,11 +92,19 @@ namespace Factory.Presentation
             {
                 case Factory.Simulation.BuildingType.Miner: return Miner;
                 case Factory.Simulation.BuildingType.Belt: return Belt;
+                case Factory.Simulation.BuildingType.Furnace: return Furnace;
                 default: return Chest;
             }
         }
 
-        public Sprite ForItem(Factory.Simulation.ItemType item) => IronOreItem;
+        public Sprite ForItem(Factory.Simulation.ItemType item)
+        {
+            switch (item)
+            {
+                case Factory.Simulation.ItemType.IronPlate: return IronPlateItem;
+                default: return IronOreItem;
+            }
+        }
 
         /// <summary>Encodes a code-drawn sprite as PNG bytes, for the export tool.</summary>
         public static byte[] EncodePng(Color32[] px)
@@ -169,6 +183,39 @@ namespace Factory.Presentation
             var px = Fill(Palette.Clear);
             DrawRock(px, 5, 5, 6, 6);
             Set(px, 7, 7, Palette.OreHighlight);
+            return px;
+        }
+
+        private static Color32[] DrawPlateItem()
+        {
+            var px = Fill(Palette.Clear);
+            Box(px, 4, 5, 8, 6, Palette.Shadow, Palette.Plate);
+            for (int x = 5; x <= 10; x++) Set(px, x, 6, Palette.PlateDark); // bottom bevel
+            Set(px, 5, 9, Palette.OreHighlight);
+            Set(px, 6, 9, Palette.OreHighlight);
+            return px;
+        }
+
+        private static Color32[] DrawFurnace()
+        {
+            var px = Fill(Palette.Clear);
+            Box(px, 1, 1, 14, 13, Palette.Shadow, Palette.Brick);
+            // Mortar lines in a running-bond pattern.
+            for (int y = 3; y <= 12; y += 3)
+            for (int x = 2; x <= 13; x++)
+                Set(px, x, y, Palette.BrickDark);
+            for (int y = 2; y <= 12; y++)
+            {
+                int offset = (y / 3) % 2 == 0 ? 4 : 7;
+                if (y % 3 != 0) { Set(px, offset, y, Palette.BrickDark); Set(px, offset + 6, y, Palette.BrickDark); }
+            }
+            // Fire mouth in the middle.
+            Box(px, 5, 4, 6, 5, Palette.Shadow, Palette.Fire);
+            Set(px, 7, 5, Palette.Accent);
+            Set(px, 8, 6, Palette.Accent);
+            // Output side: nozzle + arrow on the top edge, like the miner.
+            for (int x = 6; x <= 9; x++) Set(px, x, 14, Palette.Shadow);
+            Chevron(px, 13, Palette.Accent);
             return px;
         }
 

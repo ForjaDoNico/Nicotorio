@@ -7,6 +7,7 @@ namespace Factory.Simulation
         Miner = 0,
         Belt = 1,
         Chest = 2,
+        Furnace = 3,
     }
 
     public enum PlaceResult : byte
@@ -44,6 +45,21 @@ namespace Factory.Simulation
         /// the miner stalls: it holds at most one item and stops digging.
         /// </summary>
         public ItemType Output { get; internal set; }
+    }
+
+    /// <summary>
+    /// Smelts what is in Input into Output (see Recipes) and pushes Output through Front.
+    /// Stops when Input is empty or Output is full.
+    /// </summary>
+    public sealed class Furnace : Building
+    {
+        public override BuildingType Type => BuildingType.Furnace;
+
+        public ItemSlot Input { get; } = new ItemSlot();
+        public ItemSlot Output { get; } = new ItemSlot();
+
+        /// <summary>Ticks spent on the item being smelted. Frozen while the furnace can't work.</summary>
+        public int Progress { get; internal set; }
     }
 
     /// <summary>One item riding a belt. Plain data: never a GameObject.</summary>

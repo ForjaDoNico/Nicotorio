@@ -142,6 +142,11 @@ namespace Factory.Simulation
             if (building is Miner miner && miner.Output != ItemType.None) PlayerInventory.Add(miner.Output, 1);
             if (building is Belt belt)
                 foreach (BeltItem item in belt.ItemList) PlayerInventory.Add(item.Item, 1);
+            if (building is Furnace furnace)
+            {
+                if (!furnace.Input.IsEmpty) PlayerInventory.Add(furnace.Input.Item, furnace.Input.Count);
+                if (!furnace.Output.IsEmpty) PlayerInventory.Add(furnace.Output.Item, furnace.Output.Count);
+            }
 
             _buildingsByPos.Remove(pos);
             _buildings.Remove(building);
@@ -159,6 +164,40 @@ namespace Factory.Simulation
             return chest.Contents.TransferAllTo(PlayerInventory);
         }
 
+        /// <summary>
+        /// The player's click on a furnace: loads all the player's smeltable ore into the input
+        /// (up to FurnaceInputCapacity) and takes every finished item from the output.
+        /// Returns how many items moved in total (0 if there is no furnace there).
+        /// </summary>
+        public int InteractWithFurnace(GridPos pos)
+        {
+            if (!(GetBuilding(pos) is Furnace furnace)) return 0;
+            int moved = 0;
+
+            if (!furnace.Output.IsEmpty)
+            {
+                ItemType product = furnace.Output.Item;
+                int n = furnace.Output.Take(furnace.Output.Count);
+                PlayerInventory.Add(product, n);
+                moved += n;
+            }
+
+            ItemType toSmelt = ItemType.None;
+            foreach (var stack in PlayerInventory.Stacks())
+            {
+                bool fits = furnace.Input.IsEmpty || furnace.Input.Item == stack.Key;
+                if (fits && Recipes.IsSmeltable(stack.Key, Config)) { toSmelt = stack.Key; break; }
+            }
+            if (toSmelt != ItemType.None)
+            {
+                int room = Config.FurnaceInputCapacity - furnace.Input.Count;
+                int n = PlayerInventory.Remove(toSmelt, Math.Max(0, room));
+                if (n > 0) furnace.Input.Add(toSmelt, n);
+                moved += n;
+            }
+            return moved;
+        }
+
         public Building GetBuilding(GridPos pos) =>
             _buildingsByPos.TryGetValue(pos, out Building building) ? building : null;
 
@@ -169,6 +208,7 @@ namespace Factory.Simulation
                 case BuildingType.Miner: return new Miner();
                 case BuildingType.Belt: return new Belt();
                 case BuildingType.Chest: return new Chest();
+                case BuildingType.Furnace: return new Furnace();
                 default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
         }
@@ -192,6 +232,7 @@ namespace Factory.Simulation
             _minedSinceLastTick = false;
 
             TickMiners();
+            TickFurnaces();
             TickBelts();
 
             TickCount++;
@@ -212,6 +253,34 @@ namespace Factory.Simulation
                 }
 
                 if (TryInsert(miner.Front, miner.Output)) miner.Output = ItemType.None;
+            }
+        }
+
+        /// <summary>
+        /// Each furnace smelts one item at a time from Input into Output, only while it has
+        /// something smeltable and room for the result, then offers one finished item to Front.
+        /// </summary>
+        private void TickFurnaces()
+        {
+            foreach (Building building in _buildings)
+            {
+                if (!(building is Furnace furnace)) continue;
+
+                if (!furnace.Input.IsEmpty
+                    && Recipes.TryGetSmelting(furnace.Input.Item, Config, out SmeltingRecipe recipe)
+                    && furnace.Output.CanAdd(recipe.Output, 1, Config.FurnaceOutputCapacity))
+                {
+                    furnace.Progress++;
+                    if (furnace.Progress >= recipe.Ticks)
+                    {
+                        furnace.Progress = 0;
+                        furnace.Input.Take(1);
+                        furnace.Output.Add(recipe.Output, 1);
+                    }
+                }
+
+                if (!furnace.Output.IsEmpty && TryInsert(furnace.Front, furnace.Output.Item))
+                    furnace.Output.Take(1);
             }
         }
 
@@ -253,7 +322,7 @@ namespace Factory.Simulation
 
         /// <summary>
         /// Offers one item to whatever is on pos: a chest stores it, a belt takes it at its
-        /// entry edge if there is room. Returns false if refused; the caller keeps the item.
+        /// entry edge if there is room, a furnace takes smeltable items while its input has room. Returns false if refused; the caller keeps the item.
         /// </summary>
         public bool TryInsert(GridPos pos, ItemType item)
         {
@@ -262,6 +331,11 @@ namespace Factory.Simulation
             {
                 case Chest chest:
                     chest.Contents.Add(item, 1);
+                    return true;
+                case Furnace furnace:
+                    if (!Recipes.IsSmeltable(item, Config)) return false;
+                    if (!furnace.Input.CanAdd(item, 1, Config.FurnaceInputCapacity)) return false;
+                    furnace.Input.Add(item, 1);
                     return true;
                 case Belt belt:
                     List<BeltItem> items = belt.ItemList;
