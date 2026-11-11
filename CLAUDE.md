@@ -1,6 +1,6 @@
 # Factory prototype (Unity 6000.6.8f1, URP 2D)
 
-A minimal top-down automation game: a 64x64 grid with iron ore, a player who mines by hand,
+A minimal top-down automation game: a 64x64 grid with iron and coal patches, a player who mines by hand,
 and four buildings (miner, belt, chest, furnace). The loop is mine → smelt → build: buildings
 cost items, which start from hand mining. The scene `Assets/Scenes/Factory.unity` is empty
 on disk: everything is created in code when Play is pressed.
@@ -18,7 +18,8 @@ Assets/Tests/EditMode/        Factory.Simulation.Tests.asmdef (NUnit, tests the 
 ### Simulation (no UnityEngine)
 - `World` holds all state: tiles, player inventory, hand-mining progress and buildings.
   It changes only through commands (`MineStep`, `TryPlace`, `TryRemove`, `TakeAllFromChest`,
-  `InteractWithFurnace`, `TryInsert`) and `Tick()`.
+  `LoadFurnaceInput`, `LoadFurnaceFuel`, `TakeFurnaceOutput`, `InteractWithFurnace` (all three at
+  once), `TryInsert`) and `Tick()`.
 - `Tick()` runs at a fixed `WorldConfig.TicksPerSecond = 20`. The systems run in a fixed
   order (hand-mining reset, then `TickMiners`, then `TickFurnaces`, then `TickBelts`), and each walks
   `World.Buildings`, which is kept in **Id (placement) order**. Never iterate the
@@ -32,23 +33,31 @@ Assets/Tests/EditMode/        Factory.Simulation.Tests.asmdef (NUnit, tests the 
     - The front item is offered to `Front`; if refused, the belt backs up.
     - A full belt refuses inserts, which blocks whatever feeds it.
   - **Chest**: `Contents` is an `Inventory` with no limit.
-  - **Furnace**: `Input` and `Output` are `ItemSlot`s (one item type plus a count), capped by
-    `FurnaceInputCapacity` and `FurnaceOutputCapacity`.
-    - It smelts one item every `FurnaceTicksPerItem` ticks, only while it has smeltable input and
-      room in the output; otherwise it stalls and keeps its progress.
+  - **Furnace**: `Input`, `Fuel` and `Output` are `ItemSlot`s (one item type plus a count), capped
+    by `FurnaceInputCapacity`, `FurnaceFuelCapacity` and `FurnaceOutputCapacity`.
+    - It smelts one item every `FurnaceTicksPerItem` ticks, only while it has smeltable input,
+      room in the output and burn time; otherwise it stalls and keeps its progress.
+    - Each smelting tick uses one tick of `BurnTicksLeft`. When that runs out, it lights the next
+      fuel item (coal = `CoalBurnTicks` = 160 = 4 plates). Fuel never burns while idle.
     - Each tick it offers one output item to `Front`.
-    - What can be smelted lives only in `Recipes.TryGetSmelting`. Today that is IronOre → IronPlate;
-      replace that function to move to a recipe table.
+    - What can be smelted lives only in `Recipes.TryGetSmelting`, and what burns only in
+      `Recipes.BurnTicks`. Today that is IronOre → IronPlate, with Coal as the fuel. Replace those
+      functions to move to a recipe table.
 - `TryInsert(pos, item)` is the single handoff rule:
   - a chest always accepts;
   - a belt accepts when its entry edge is free;
-  - a furnace accepts smeltable items while its input has room.
+  - a furnace takes fuel into `Fuel` and smeltable items into `Input`, while there is room.
+    Feed ore and coal on separate belts or from different sides. A single mixed belt can jam:
+    once the fuel slot is full, a coal item at the front of the belt blocks the ore behind it.
 - **Build costs**: `WorldConfig.BuildCosts` has one `BuildCost` line per (building, item).
   - `CanPlace` checks the location first, then returns `NotEnoughItems` if `CanAfford` fails.
   - `TryPlace` pays the cost from `PlayerInventory`, and `TryRemove` refunds it in full.
   - `WorldConfig.StartingInventory` is empty by default, so a run starts from hand mining.
 - Removing a building gives the player its build cost plus whatever it held (chest contents,
   miner output, belt items, furnace input and output). Items are never lost or duplicated.
+- Tiles: Grass, IronOre and CoalOre. `TileYield.Of` gives the item a tile mines into, and miners go
+  on any tile that yields something. `WorldGenerator` stamps iron first, then coal on grass only,
+  so adding a resource never moves the existing patches.
 - All randomness goes through `DeterministicRandom` (SplitMix64), seeded from `WorldConfig.Seed`.
   Tunables all live in `WorldConfig`.
 - Views poll version counters (`Inventory.Version`, `World.BuildingsVersion`) to redraw only on change.
@@ -63,7 +72,10 @@ Assets/Tests/EditMode/        Factory.Simulation.Tests.asmdef (NUnit, tests the 
 - **`CommandInput`** turns Input System actions into commands:
   - left click places;
   - left click that starts on a chest takes its contents;
-  - left click that starts on a furnace loads the player's ore and takes the plates;
+  - left click that starts on a furnace opens the `FurnaceWindow`;
+  - a left click elsewhere in the world while the window is open only closes it;
+  - clicks over any UI never reach the world. `EventSystem.IsPointerOverGameObject` is used, and
+    the bootstrap creates the EventSystem with an `InputSystemUIInputModule`;
   - a drag that fails for lack of items stops placing until the button is released;
   - X removes;
   - right mouse button mines;
@@ -78,7 +90,12 @@ Assets/Tests/EditMode/        Factory.Simulation.Tests.asmdef (NUnit, tests the 
   - `CursorView` draws the hover frame, the mining bar and the ghost;
   - `HudView` is a uGUI overlay using the legacy `Text` with the built-in font: inventory,
     the hotbar (each building's cost, greyed out when unaffordable), and a panel for the hovered
-    chest or furnace.
+    chest or furnace;
+  - `FurnaceWindow` is a uGUI window with ore, coal and plate slots plus smelting and flame bars.
+    - Clicking a slot calls `CommandInput.QueueFurnaceAction`, so the change is applied at the
+      next tick like every command.
+    - It closes with Esc or E, on a click outside, when the player walks more than 6 tiles away,
+      or when the furnace is removed.
 - **Art**: `SpriteLibrary` loads each sprite with `Resources.Load` from `Assets/Resources/Sprites/<file>.png`.
   The file names are listed in `SpriteLibrary.Art`.
   - Sprites are 16x16 and drawn facing Up; `BuildingView.RotationFor` rotates them.
@@ -114,7 +131,8 @@ Assets/Tests/EditMode/        Factory.Simulation.Tests.asmdef (NUnit, tests the 
   - R: rotate
   - Left click (or drag): build
   - Left click on a chest: take its contents
-  - Left click on a furnace: load your iron ore and take the plates
+  - Left click on a furnace: open its window. Click the ore or coal slot to load yours, click the
+    plates to take them. Esc or E closes it.
   - X (or drag): remove
 
 ## Tests
@@ -126,6 +144,7 @@ EditMode tests are in `Assets/Tests/EditMode` (assembly `Factory.Simulation.Test
 - belt movement, delivery and blocking;
 - chest accumulation;
 - furnace smelting;
+- coal: fuel burn, coal patches, separate feed lines;
 - build costs, including the full loop from an empty inventory to a built miner.
 
 Run them in either of these ways:
