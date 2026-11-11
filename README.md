@@ -1,6 +1,6 @@
 # Nicotório
 
-Protótipo de jogo de automação em visão de cima, feito em **Unity 6** (URP 2D). Você minera ferro na mão, monta mineradoras, liga tudo com esteiras e junta a produção em baús.
+Protótipo de jogo de automação em visão de cima, feito em **Unity 6** (URP 2D). Você minera ferro na mão, funde o minério em placas numa fornalha e usa as placas para construir mineradoras, esteiras e baús que automatizam tudo.
 
 ![Fábrica com mineradoras alimentando uma esteira que desce até um baú](docs/images/fabrica.png)
 
@@ -11,6 +11,27 @@ Protótipo de jogo de automação em visão de cima, feito em **Unity 6** (URP 2
 - **Mineradora**: só pode ser colocada em minério. Produz 1 minério por segundo e entrega no tile para onde a seta aponta. Se não tiver onde entregar, ela segura o item e para.
 - **Esteira**: leva os itens na direção da seta e entrega na próxima esteira ou num baú. Quando uma esteira enche, ela trava a de trás.
 - **Baú**: guarda tudo o que chega. Clique nele para pegar o conteúdo.
+- **Fornalha**: transforma 1 minério de ferro em 1 placa de ferro a cada 2 segundos e entrega a placa no tile para onde a seta aponta.
+  - Guarda até 10 minérios na entrada e até 10 placas na saída.
+  - Pode ser alimentada por uma mineradora ou por uma esteira.
+  - Também dá para alimentar com a mão: clique nela para colocar o seu minério e pegar as placas prontas.
+- **Construir custa itens**, e remover devolve o custo:
+
+  | Construção | Custo |
+  |---|---|
+  | Fornalha | 5 minérios de ferro |
+  | Mineradora | 3 placas de ferro |
+  | Esteira | 1 placa de ferro |
+  | Baú | 2 placas de ferro |
+
+  Você começa sem nada:
+  1. Minere 5 minérios na mão.
+  2. Construa uma fornalha.
+  3. Abasteça a fornalha com mais minério.
+  4. Pegue as placas.
+  5. Construa a primeira mineradora.
+
+  A hotbar mostra o custo de cada construção e fica cinza quando falta item.
 
 | Mineração manual | Esteira cheia trava a de trás |
 |---|---|
@@ -26,10 +47,11 @@ Protótipo de jogo de automação em visão de cima, feito em **Unity 6** (URP 2
 |---|---|
 | **WASD** | andar |
 | **Botão direito** (segurar) | minerar o minério sob o mouse (alcance de 3 tiles) |
-| **1 / 2 / 3** | escolher mineradora / esteira / baú (aperte de novo para desmarcar) |
+| **1 / 2 / 3 / 4** | escolher mineradora / esteira / baú / fornalha (aperte de novo para desmarcar) |
 | **R** | girar a construção |
 | **Botão esquerdo** | construir; segure e arraste para fazer uma linha |
 | **Botão esquerdo no baú** | pegar tudo o que está nele |
+| **Botão esquerdo na fornalha** | colocar o seu minério e pegar as placas prontas |
 | **X** | remover a construção sob o mouse; o que ela tinha volta para você |
 
 ## Como rodar
@@ -48,8 +70,8 @@ Os gráficos ficam em **`Assets/Resources/Sprites/`**, um PNG de 16x16 para cada
 | `grass_1.png`, `grass_2.png` | duas variações de grama |
 | `iron_ore.png` | tile de minério de ferro |
 | `player.png` | jogador |
-| `miner.png`, `belt.png`, `chest.png` | mineradora, esteira e baú, **desenhados apontando para cima** |
-| `item_iron_ore.png` | minério andando na esteira |
+| `miner.png`, `belt.png`, `chest.png`, `furnace.png` | mineradora, esteira, baú e fornalha, **desenhados apontando para cima** |
+| `item_iron_ore.png`, `item_iron_plate.png` | minério e placa andando na esteira |
 | `cursor_frame.png` | moldura do cursor, em branco (o jogo pinta a cor) |
 
 **Para mudar um gráfico, sobrescreva o PNG com o mesmo nome.** O Unity aplica sozinho as configurações de pixel art: 16 pixels por tile, filtro Point, sem compressão e sem mipmaps. Não precisa mexer no Inspector. Todos os sprites são juntados num **Sprite Atlas** (`Assets/Resources/SpriteAtlas.spriteatlasv2`), uma textura só, para o jogo desenhar tudo com poucas chamadas.
@@ -76,8 +98,9 @@ Os testes EditMode (`Assets/Tests/EditMode`) cobrem:
 - geração do mapa;
 - mineração manual;
 - regras de construção;
-- ritmo da mineradora;
+- ritmo da mineradora e da fornalha;
 - movimento e bloqueio das esteiras;
-- acúmulo no baú.
+- acúmulo no baú;
+- custo de construção, incluindo o caminho completo do inventário vazio até a primeira mineradora.
 
 Para rodar, abra no Unity **Window > General > Test Runner > EditMode > Run All**. Saia do Play mode antes.
