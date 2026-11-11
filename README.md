@@ -1,38 +1,44 @@
 # Nicotório
 
-Protótipo de jogo de automação em visão de cima, feito em **Unity 6** (URP 2D). Você minera ferro e carvão na mão, funde o minério em placas numa fornalha que queima carvão e usa as placas para construir mineradoras, esteiras e baús que automatizam tudo.
+Protótipo de jogo de automação em visão de cima, feito em **Unity 6** (URP 2D). Você começa cortando árvores e monta uma bancada de criação. Depois minera ferro e carvão, funde o minério em placas numa fornalha e cria na bancada as mineradoras, esteiras e baús que automatizam tudo.
 
 ![Fábrica com mineradoras alimentando uma esteira que desce até um baú](docs/images/fabrica.png)
 
 ## O que tem
 
-- **Mapa 64x64** com manchas de minério de ferro e de carvão, geradas a partir de uma seed (o mapa é sempre o mesmo).
-- **Mineração manual**: segure o botão direito sobre um minério próximo para ir enchendo o inventário.
+- **Mapa 64x64** com bosques, manchas de minério de ferro e de carvão, gerados a partir de uma seed (o mapa é sempre o mesmo).
+- **Coleta manual**: segure o botão direito sobre um minério, carvão ou árvore próximos.
+  - Cada árvore dá 4 madeiras e depois some.
+  - Não dá para construir em cima de árvore, mas dá para andar por cima.
+- **Bancada**: custa 5 madeiras e é a primeira construção.
+  - Clique nela para abrir a lista de receitas.
+  - O filtro **"Posso fazer"** mostra o que dá para fazer agora, e **"Todas"** mostra tudo, com o que falta em vermelho.
+  - Clique numa receita para fazer 1, Shift+clique para fazer 5, botão direito para fazer o máximo.
 - **Mineradora**: só pode ser colocada em minério. Produz 1 minério por segundo e entrega no tile para onde a seta aponta. Se não tiver onde entregar, ela segura o item e para.
 - **Esteira**: leva os itens na direção da seta e entrega na próxima esteira ou num baú. Quando uma esteira enche, ela trava a de trás.
 - **Baú**: guarda tudo o que chega. Clique nele para pegar o conteúdo.
 - **Fornalha**: transforma 1 minério de ferro em 1 placa de ferro a cada 2 segundos e entrega a placa no tile para onde a seta aponta.
-  - Queima **carvão**: 1 carvão rende 4 placas, e só é gasto enquanto a fornalha funde.
-  - Guarda até 10 minérios, 10 carvões e 10 placas.
+  - Queima **carvão** (1 carvão = 4 placas) ou **madeira** (1 madeira = 2 placas). O combustível só é gasto enquanto a fornalha funde.
+  - Guarda até 10 minérios, 10 combustíveis e 10 placas.
   - Pode ser alimentada por mineradoras e esteiras. Traga o minério e o carvão por **esteiras separadas** (por lados diferentes da fornalha): numa esteira misturada, quando o slot de carvão enche, um carvão parado na frente trava o minério que vem atrás.
-  - **Clique nela para abrir a janela**: clique no slot de minério ou de carvão para colocar o seu, e no de placas para pegar as prontas.
-- **Construir custa itens**, e remover devolve o custo:
+  - **Clique nela para abrir a janela**: clique no slot de minério ou de combustível para colocar o seu, e no de placas para pegar as prontas.
+- **As construções são itens criados na bancada.** Colocar gasta 1 item e remover devolve o item:
 
-  | Construção | Custo |
+  | Receita | Ingredientes |
   |---|---|
-  | Fornalha | 5 minérios de ferro |
-  | Mineradora | 3 placas de ferro |
-  | Esteira | 1 placa de ferro |
-  | Baú | 2 placas de ferro |
+  | Engrenagem de ferro | 2 placas de ferro |
+  | Baú | 4 madeiras |
+  | Fornalha | 5 minérios de ferro + 2 madeiras |
+  | Esteira (sai 2) | 1 engrenagem + 1 placa de ferro |
+  | Mineradora | 3 engrenagens + 2 placas de ferro + 2 madeiras |
 
   Você começa sem nada:
-  1. Minere 5 minérios na mão.
-  2. Construa uma fornalha.
-  3. Minere mais minério e um pouco de carvão e coloque os dois na fornalha.
-  4. Pegue as placas.
-  5. Construa a primeira mineradora.
+  1. Corte árvores e construa a **bancada** (5 madeiras).
+  2. Minere 5 minérios e crie uma **fornalha**.
+  3. Abasteça a fornalha com minério e use **madeira como combustível**. Ainda não precisa de carvão.
+  4. Pegue as placas, faça **engrenagens** e depois a primeira **mineradora**.
 
-  A hotbar mostra o custo de cada construção e fica cinza quando falta item.
+  A hotbar mostra quantos itens de cada construção você tem ("x3"; a bancada mostra o custo em madeira) e fica cinza quando você não tem nenhum.
 
 | Mineração manual | Esteira cheia trava a de trás |
 |---|---|
@@ -42,18 +48,23 @@ Protótipo de jogo de automação em visão de cima, feito em **Unity 6** (URP 2
 |---|---|
 | ![Painel no canto mostrando o conteúdo do baú](docs/images/bau.png) | ![Janela da fornalha com slots de minério, carvão e placas](docs/images/fornalha.png) |
 
+| Bancada de criação |
+|---|
+| ![Janela da bancada com a lista de receitas, as que faltam ingredientes em cinza com o que falta em vermelho](docs/images/bancada.png) |
+
 ## Controles
 
 | Tecla | Ação |
 |---|---|
 | **WASD** | andar |
-| **Botão direito** (segurar) | minerar o ferro ou carvão sob o mouse (alcance de 3 tiles) |
-| **1 / 2 / 3 / 4** | escolher mineradora / esteira / baú / fornalha (aperte de novo para desmarcar) |
+| **Botão direito** (segurar) | minerar ferro ou carvão, ou cortar árvore, sob o mouse (alcance de 3 tiles) |
+| **1 / 2 / 3 / 4 / 5** | escolher mineradora / esteira / baú / fornalha / bancada (aperte de novo para desmarcar) |
 | **R** | girar a construção |
 | **Botão esquerdo** | construir; segure e arraste para fazer uma linha |
 | **Botão esquerdo no baú** | pegar tudo o que está nele |
 | **Botão esquerdo na fornalha** | abrir a janela da fornalha (clique nos slots para colocar minério/carvão e pegar placas) |
-| **Esc / E** | fechar a janela da fornalha |
+| **Botão esquerdo na bancada** | abrir a lista de receitas (clique: 1, Shift+clique: 5, botão direito: o máximo) |
+| **Esc / E** | fechar a janela da fornalha ou da bancada |
 | **X** | remover a construção sob o mouse; o que ela tinha volta para você |
 
 ## Como rodar
@@ -70,10 +81,10 @@ Os gráficos ficam em **`Assets/Resources/Sprites/`**, um PNG de 16x16 para cada
 | Arquivo | O que é |
 |---|---|
 | `grass_1.png`, `grass_2.png` | duas variações de grama |
-| `iron_ore.png`, `coal_ore.png` | tiles de minério de ferro e de carvão |
+| `iron_ore.png`, `coal_ore.png`, `tree.png` | tiles de minério de ferro, de carvão e de árvore |
 | `player.png` | jogador |
-| `miner.png`, `belt.png`, `chest.png`, `furnace.png` | mineradora, esteira, baú e fornalha, **desenhados apontando para cima** |
-| `item_iron_ore.png`, `item_iron_plate.png`, `item_coal.png` | minério, placa e carvão andando na esteira |
+| `miner.png`, `belt.png`, `chest.png`, `furnace.png`, `crafting_table.png` | mineradora, esteira, baú, fornalha e bancada, **desenhados apontando para cima** |
+| `item_iron_ore.png`, `item_iron_plate.png`, `item_coal.png`, `item_wood.png`, `item_iron_gear.png` | minério, placa, carvão, madeira e engrenagem |
 | `cursor_frame.png` | moldura do cursor, em branco (o jogo pinta a cor) |
 
 **Para mudar um gráfico, sobrescreva o PNG com o mesmo nome.** O Unity aplica sozinho as configurações de pixel art: 16 pixels por tile, filtro Point, sem compressão e sem mipmaps. Não precisa mexer no Inspector. Todos os sprites são juntados num **Sprite Atlas** (`Assets/Resources/SpriteAtlas.spriteatlasv2`), uma textura só, para o jogo desenhar tudo com poucas chamadas.
@@ -102,8 +113,10 @@ Os testes EditMode (`Assets/Tests/EditMode`) cobrem:
 - regras de construção;
 - ritmo da mineradora e da fornalha;
 - carvão: queima, manchas no mapa e linhas separadas de minério e carvão;
+- madeira: árvores no mapa, corte, árvore que vira grama e madeira como combustível;
+- criação: receitas, alcance da bancada e consultas do que dá para fazer;
 - movimento e bloqueio das esteiras;
 - acúmulo no baú;
-- custo de construção, incluindo o caminho completo do inventário vazio até a primeira mineradora.
+- construções como itens, incluindo o caminho completo do inventário vazio até a primeira mineradora usando só madeira como combustível.
 
 Para rodar, abra no Unity **Window > General > Test Runner > EditMode > Run All**. Saia do Play mode antes.
