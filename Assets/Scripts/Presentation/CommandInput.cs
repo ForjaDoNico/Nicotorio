@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Factory.Simulation;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 namespace Factory.Presentation
@@ -13,7 +14,7 @@ namespace Factory.Presentation
     /// </summary>
     public sealed class CommandInput : MonoBehaviour
     {
-        private enum CommandKind : byte { Place, Remove, TakeFromChest, InteractWithFurnace }
+        private enum CommandKind : byte { Place, Remove, TakeFromChest, LoadFurnaceInput, LoadFurnaceFuel, TakeFurnaceOutput }
 
         private struct Command
         {
@@ -37,6 +38,12 @@ namespace Factory.Presentation
         // Set when a placement in the current drag failed for lack of items: the drag stops
         // placing until the button is released, instead of resuming if items show up.
         private bool _outOfItemsThisDrag;
+
+        // Set when a left click was used by the UI (a click on a window, or the click that
+        // closed one): that press must not also build in the world until it is released.
+        private bool _clickUsedByUi;
+
+        private FurnaceWindow _furnaceWindow;
 
         /// <summary>Tile under the mouse this frame (may be out of bounds).</summary>
         public GridPos HoverTile { get; private set; }
@@ -68,6 +75,22 @@ namespace Factory.Presentation
             runner.BeforeTick += ApplyCommands;
         }
 
+        /// <summary>Connects the furnace window, which is created after this component.</summary>
+        public void AttachFurnaceWindow(FurnaceWindow window) => _furnaceWindow = window;
+
+        /// <summary>Queues a furnace window action; applied at the next tick like every command.</summary>
+        public void QueueFurnaceAction(GridPos furnace, FurnaceAction action)
+        {
+            CommandKind kind = action == FurnaceAction.LoadInput ? CommandKind.LoadFurnaceInput
+                : action == FurnaceAction.LoadFuel ? CommandKind.LoadFurnaceFuel
+                : CommandKind.TakeFurnaceOutput;
+            _pending.Add(new Command { Kind = kind, Tile = furnace });
+        }
+
+        /// <summary>True when the mouse is over any HUD panel or window, which take the click instead.</summary>
+        private static bool PointerOverUi() =>
+            EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+
         private static InputAction Button(string name, string binding)
         {
             var action = new InputAction(name, InputActionType.Button, binding);
@@ -90,22 +113,40 @@ namespace Factory.Presentation
                 SelectionVersion++;
             }
 
-            // Left click that starts on a chest or furnace interacts with it instead of building.
-            if (_place.WasPressedThisFrame() && _world.InBounds(HoverTile))
+            bool overUi = PointerOverUi();
+
+            // A left click that starts on a chest takes its contents; on a furnace it opens its
+            // window; anywhere else in the world it closes an open window (and only does that).
+            if (_place.WasPressedThisFrame())
             {
-                Building clicked = _world.GetBuilding(HoverTile);
-                CommandKind? interact = clicked is Chest ? CommandKind.TakeFromChest
-                    : clicked is Furnace ? CommandKind.InteractWithFurnace
-                    : (CommandKind?)null;
-                if (interact.HasValue)
+                if (overUi)
                 {
-                    _pending.Add(new Command { Kind = interact.Value, Tile = HoverTile });
-                    _lastPlaceTile = HoverTile; // the drag starts here; don't also try to build on it
+                    _clickUsedByUi = true;
+                }
+                else if (_world.InBounds(HoverTile))
+                {
+                    Building clicked = _world.GetBuilding(HoverTile);
+                    if (clicked is Chest)
+                    {
+                        _pending.Add(new Command { Kind = CommandKind.TakeFromChest, Tile = HoverTile });
+                        _lastPlaceTile = HoverTile; // the drag starts here; don't also try to build on it
+                    }
+                    else if (clicked is Furnace && _furnaceWindow != null)
+                    {
+                        _furnaceWindow.Open(HoverTile);
+                        _lastPlaceTile = HoverTile;
+                    }
+                    else if (_furnaceWindow != null && _furnaceWindow.IsOpen)
+                    {
+                        _furnaceWindow.Close();
+                        _clickUsedByUi = true;
+                    }
                 }
             }
 
             // Place: on press, then once per new tile while held.
-            if (_place.IsPressed() && Selected.HasValue && _world.InBounds(HoverTile) && !_outOfItemsThisDrag)
+            if (_place.IsPressed() && Selected.HasValue && _world.InBounds(HoverTile)
+                && !_outOfItemsThisDrag && !_clickUsedByUi && !overUi)
             {
                 if (_lastPlaceTile != HoverTile)
                 {
@@ -117,10 +158,11 @@ namespace Factory.Presentation
             {
                 _lastPlaceTile = null;
                 _outOfItemsThisDrag = false;
+                _clickUsedByUi = false;
             }
 
             // Remove: same drag behaviour with X.
-            if (_remove.IsPressed() && _world.InBounds(HoverTile))
+            if (_remove.IsPressed() && _world.InBounds(HoverTile) && !overUi)
             {
                 if (_lastRemoveTile != HoverTile)
                 {
@@ -154,14 +196,16 @@ namespace Factory.Presentation
                         break;
                     case CommandKind.Remove: _world.TryRemove(c.Tile); break;
                     case CommandKind.TakeFromChest: _world.TakeAllFromChest(c.Tile); break;
-                    case CommandKind.InteractWithFurnace: _world.InteractWithFurnace(c.Tile); break;
+                    case CommandKind.LoadFurnaceInput: _world.LoadFurnaceInput(c.Tile); break;
+                    case CommandKind.LoadFurnaceFuel: _world.LoadFurnaceFuel(c.Tile); break;
+                    case CommandKind.TakeFurnaceOutput: _world.TakeFurnaceOutput(c.Tile); break;
                 }
             }
             _pending.Clear();
 
             // The runner ticks before this component's Update, so refresh the pointer here.
             HoverTile = PointerTile();
-            if (_mine.IsPressed()) _world.MineStep(HoverTile, _player.Tile);
+            if (_mine.IsPressed() && !PointerOverUi()) _world.MineStep(HoverTile, _player.Tile);
         }
 
         private GridPos PointerTile()

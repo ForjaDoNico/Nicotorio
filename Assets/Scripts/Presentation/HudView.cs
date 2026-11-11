@@ -35,6 +35,7 @@ namespace Factory.Presentation
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
             scaler.matchWidthOrHeight = 1f;
+            gameObject.AddComponent<GraphicRaycaster>(); // panels block world clicks under them
 
             _inventoryText = MakePanel("InventoryPanel", new Vector2(0f, 1f), new Vector2(24f, -24f));
             _hotbarText = MakePanel("HotbarPanel", new Vector2(0.5f, 0f), new Vector2(0f, 24f));
@@ -124,7 +125,7 @@ namespace Factory.Presentation
                 int percent = furnace.Progress * 100 / cfg.FurnaceTicksPerItem;
                 _sb.Append("\nFundindo: ").Append(percent).Append('%');
                 if (furnace.BurnTicksLeft == 0 && furnace.Fuel.IsEmpty) _sb.Append("  <i>sem carvão</i>");
-                _sb.Append("\n<size=24>Esq: abastecer com minério e carvão / pegar placas</size>");
+                _sb.Append("\n<size=24>Esq: abrir</size>");
             }
             _hoverText.text = _sb.ToString();
         }
@@ -187,7 +188,7 @@ namespace Factory.Presentation
                 if (color != null) _sb.Append("</color>");
             }
             _sb.Append("\n<size=24>R: girar (").Append(BuildingNames.Of(_input.Facing)).Append(")    ")
-               .Append("Esq: construir / usar baú ou fornalha    Dir: minerar    X: remover</size>");
+               .Append("Esq: construir / abrir baú ou fornalha    Dir: minerar    X: remover</size>");
             _hotbarText.text = _sb.ToString();
         }
 

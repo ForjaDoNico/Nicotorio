@@ -1,5 +1,7 @@
 using Factory.Simulation;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 
@@ -65,9 +67,18 @@ namespace Factory.Presentation
             cursor.transform.SetParent(root.transform, false);
             cursor.Init(world, input, player, sprites);
 
+            // UI clicks (furnace window) go through an EventSystem driven by the Input System.
+            var eventSystem = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
+            eventSystem.transform.SetParent(root.transform, false);
+
             var hud = new GameObject("HUD").AddComponent<HudView>();
             hud.transform.SetParent(root.transform, false);
             hud.Init(world, input);
+
+            var furnaceWindow = new GameObject("FurnaceWindow").AddComponent<FurnaceWindow>();
+            furnaceWindow.transform.SetParent(root.transform, false);
+            furnaceWindow.Init(world, input, player, sprites);
+            input.AttachFurnaceWindow(furnaceWindow);
         }
     }
 }
