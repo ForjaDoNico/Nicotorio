@@ -12,13 +12,17 @@ namespace Factory.Presentation
     public sealed class HudView : MonoBehaviour
     {
         private World _world;
+        private CommandInput _input;
         private Text _inventoryText;
+        private Text _hotbarText;
         private int _shownVersion = -1;
+        private int _shownSelectionVersion = -1;
         private readonly StringBuilder _sb = new StringBuilder();
 
-        public void Init(World world)
+        public void Init(World world, CommandInput input)
         {
             _world = world;
+            _input = input;
 
             var canvas = gameObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -27,11 +31,18 @@ namespace Factory.Presentation
             scaler.referenceResolution = new Vector2(1920, 1080);
             scaler.matchWidthOrHeight = 1f;
 
-            var panel = new GameObject("InventoryPanel", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+            _inventoryText = MakePanel("InventoryPanel", new Vector2(0f, 1f), new Vector2(24f, -24f));
+            _hotbarText = MakePanel("HotbarPanel", new Vector2(0.5f, 0f), new Vector2(0f, 24f));
+            _hotbarText.alignment = TextAnchor.MiddleCenter;
+        }
+
+        private Text MakePanel(string name, Vector2 anchor, Vector2 offset)
+        {
+            var panel = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
             panel.transform.SetParent(transform, false);
             var rect = (RectTransform)panel.transform;
-            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
-            rect.anchoredPosition = new Vector2(24f, -24f);
+            rect.anchorMin = rect.anchorMax = rect.pivot = anchor;
+            rect.anchoredPosition = offset;
             var bg = panel.GetComponent<Image>();
             Color shadow = Palette.Shadow;
             bg.color = new Color(shadow.r, shadow.g, shadow.b, 0.8f);
@@ -41,21 +52,23 @@ namespace Factory.Presentation
             fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            var textGo = new GameObject("InventoryText", typeof(RectTransform), typeof(Text));
+            var textGo = new GameObject("Text", typeof(RectTransform), typeof(Text));
             textGo.transform.SetParent(panel.transform, false);
-            _inventoryText = textGo.GetComponent<Text>();
-            _inventoryText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            _inventoryText.fontSize = 30;
-            _inventoryText.lineSpacing = 1.15f;
-            _inventoryText.color = Palette.HeroSecondary;
-            _inventoryText.supportRichText = true;
-            _inventoryText.horizontalOverflow = HorizontalWrapMode.Overflow;
-            _inventoryText.verticalOverflow = VerticalWrapMode.Overflow;
+            var text = textGo.GetComponent<Text>();
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.fontSize = 30;
+            text.lineSpacing = 1.15f;
+            text.color = Palette.HeroSecondary;
+            text.supportRichText = true;
+            text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            text.verticalOverflow = VerticalWrapMode.Overflow;
+            return text;
         }
 
         private void LateUpdate()
         {
             if (_world == null) return;
+            RefreshHotbar();
             var inv = _world.PlayerInventory;
             if (inv.Version == _shownVersion) return;
             _shownVersion = inv.Version;
@@ -70,6 +83,51 @@ namespace Factory.Presentation
             }
             if (!any) _sb.Append("\n<i>vazio</i>");
             _inventoryText.text = _sb.ToString();
+        }
+
+        private void RefreshHotbar()
+        {
+            if (_input.SelectionVersion == _shownSelectionVersion) return;
+            _shownSelectionVersion = _input.SelectionVersion;
+
+            string accent = "#" + ColorUtility.ToHtmlStringRGB(Palette.Accent);
+            _sb.Clear();
+            for (int i = 0; i < 3; i++)
+            {
+                var type = (BuildingType)i;
+                bool selected = _input.Selected == type;
+                if (i > 0) _sb.Append("    ");
+                if (selected) _sb.Append("<color=").Append(accent).Append("><b>");
+                _sb.Append('[').Append(i + 1).Append("] ").Append(BuildingNames.Of(type));
+                if (selected) _sb.Append("</b></color>");
+            }
+            _sb.Append("\n<size=24>R: girar (").Append(BuildingNames.Of(_input.Facing)).Append(")    ")
+               .Append("Esq: construir    Dir: minerar    X: remover</size>");
+            _hotbarText.text = _sb.ToString();
+        }
+    }
+
+    public static class BuildingNames
+    {
+        public static string Of(BuildingType type)
+        {
+            switch (type)
+            {
+                case BuildingType.Miner: return "Mineradora";
+                case BuildingType.Belt: return "Esteira";
+                default: return "Baú";
+            }
+        }
+
+        public static string Of(Direction d)
+        {
+            switch (d)
+            {
+                case Direction.Up: return "cima";
+                case Direction.Right: return "direita";
+                case Direction.Down: return "baixo";
+                default: return "esquerda";
+            }
         }
     }
 

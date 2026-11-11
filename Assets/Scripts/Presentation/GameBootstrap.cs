@@ -41,6 +41,10 @@ namespace Factory.Presentation
             worldView.transform.SetParent(root.transform, false);
             worldView.Init(world, sprites);
 
+            var buildingView = new GameObject("Buildings").AddComponent<BuildingView>();
+            buildingView.transform.SetParent(root.transform, false);
+            buildingView.Init(world, sprites);
+
             var player = new GameObject("Player").AddComponent<PlayerController>();
             player.transform.SetParent(root.transform, false);
             player.Init(world, sprites);
@@ -59,7 +63,7 @@ namespace Factory.Presentation
 
             var hud = new GameObject("HUD").AddComponent<HudView>();
             hud.transform.SetParent(root.transform, false);
-            hud.Init(world);
+            hud.Init(world, input);
         }
     }
 }

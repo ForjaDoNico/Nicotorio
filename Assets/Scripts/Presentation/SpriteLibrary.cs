@@ -15,6 +15,11 @@ namespace Factory.Presentation
         public Sprite CursorFrame { get; }
         public Sprite WhitePixel { get; }
 
+        // Buildings are drawn facing Up; views rotate them to their Direction.
+        public Sprite Miner { get; }
+        public Sprite Belt { get; }
+        public Sprite Chest { get; }
+
         public SpriteLibrary()
         {
             Grass = MakeGrass(1);
@@ -23,6 +28,19 @@ namespace Factory.Presentation
             Player = MakePlayer();
             CursorFrame = MakeCursorFrame();
             WhitePixel = MakeWhitePixel();
+            Miner = MakeMiner();
+            Belt = MakeBelt();
+            Chest = MakeChest();
+        }
+
+        public Sprite ForBuilding(Factory.Simulation.BuildingType type)
+        {
+            switch (type)
+            {
+                case Factory.Simulation.BuildingType.Miner: return Miner;
+                case Factory.Simulation.BuildingType.Belt: return Belt;
+                default: return Chest;
+            }
         }
 
         // ---- builders ---------------------------------------------------------------
@@ -84,6 +102,69 @@ namespace Factory.Presentation
             // Little backpack nub for silhouette.
             for (int x = 6; x <= 9; x++) Set(px, x, 13, Palette.Shadow);
             return ToSprite(px, "Player");
+        }
+
+        private static Sprite MakeMiner()
+        {
+            var px = Fill(Palette.Clear);
+            Box(px, 1, 1, 14, 13, Palette.Shadow, Palette.Props);
+            // Inner housing and two bolts.
+            Box(px, 4, 3, 8, 6, Palette.Shadow, Palette.Stone);
+            Set(px, 2, 2, Palette.HeroSecondary);
+            Set(px, 13, 2, Palette.HeroSecondary);
+            // Output nozzle + arrow at the top edge: the side it delivers to.
+            for (int x = 6; x <= 9; x++) Set(px, x, 14, Palette.Shadow);
+            Chevron(px, 12, Palette.Accent);
+            return ToSprite(px, "Miner");
+        }
+
+        private static Sprite MakeBelt()
+        {
+            var px = Fill(Palette.Shadow);
+            // Rails on both sides, a lighter bed, and two chevrons pointing along the belt.
+            for (int y = 0; y < N; y++)
+            {
+                Set(px, 0, y, Palette.Stone);
+                Set(px, 1, y, Palette.Stone);
+                Set(px, N - 2, y, Palette.Stone);
+                Set(px, N - 1, y, Palette.Stone);
+                for (int x = 3; x <= N - 4; x++) Set(px, x, y, Palette.BeltBed);
+            }
+            Chevron(px, 13, Palette.Path);
+            Chevron(px, 6, Palette.Path);
+            return ToSprite(px, "Belt");
+        }
+
+        private static Sprite MakeChest()
+        {
+            var px = Fill(Palette.Clear);
+            Box(px, 1, 2, 14, 12, Palette.Shadow, Palette.Path);
+            for (int x = 2; x <= 13; x++) Set(px, x, 9, Palette.Shadow);   // lid seam
+            for (int x = 2; x <= 13; x++) Set(px, x, 12, Palette.PathLight); // lid highlight
+            Box(px, 7, 7, 2, 4, Palette.Shadow, Palette.Accent);           // latch
+            return ToSprite(px, "Chest");
+        }
+
+        /// <summary>A "^" pointing up with its apex on row top, 2 px thick, centered.</summary>
+        private static void Chevron(Color32[] px, int top, Color32 c)
+        {
+            for (int k = 0; k < 4; k++)
+            {
+                Set(px, 7 - k, top - k, c); Set(px, 8 + k, top - k, c);
+                Set(px, 7 - k, top - k - 1, c); Set(px, 8 + k, top - k - 1, c);
+            }
+        }
+
+        /// <summary>Filled rectangle with a 1 px outline and clipped corners.</summary>
+        private static void Box(Color32[] px, int x0, int y0, int w, int h, Color32 outline, Color32 fill)
+        {
+            for (int y = y0; y < y0 + h; y++)
+            for (int x = x0; x < x0 + w; x++)
+            {
+                bool left = x == x0, right = x == x0 + w - 1, bottom = y == y0, top = y == y0 + h - 1;
+                if ((left || right) && (bottom || top) && w > 2 && h > 2) continue;
+                Set(px, x, y, left || right || bottom || top ? outline : fill);
+            }
         }
 
         /// <summary>White corner brackets; tinted per state by the cursor view.</summary>

@@ -3,7 +3,10 @@ using UnityEngine;
 
 namespace Factory.Presentation
 {
-    /// <summary>Corner brackets on the hovered tile, plus a progress bar while hand mining.</summary>
+    /// <summary>
+    /// Corner brackets on the hovered tile, a progress bar while hand mining, and a translucent
+    /// preview of the selected building (red when World.CanPlace says no).
+    /// </summary>
     [DefaultExecutionOrder(50)]
     public sealed class CursorView : MonoBehaviour
     {
@@ -15,6 +18,8 @@ namespace Factory.Presentation
         private CommandInput _input;
         private PlayerController _player;
         private SpriteRenderer _frame;
+        private SpriteRenderer _ghost;
+        private SpriteLibrary _sprites;
         private Transform _barRoot;
         private Transform _barFill;
 
@@ -23,6 +28,11 @@ namespace Factory.Presentation
             _world = world;
             _input = input;
             _player = player;
+            _sprites = sprites;
+
+            _ghost = new GameObject("Ghost").AddComponent<SpriteRenderer>();
+            _ghost.transform.SetParent(transform, false);
+            _ghost.sortingOrder = SortingOrders.Cursor - 1;
 
             _frame = gameObject.AddComponent<SpriteRenderer>();
             _frame.sprite = sprites.CursorFrame;
@@ -54,9 +64,24 @@ namespace Factory.Presentation
             bool visible = _world.InBounds(tile);
             _frame.enabled = visible;
             _barRoot.gameObject.SetActive(false);
+            _ghost.enabled = false;
             if (!visible) return;
 
             transform.position = new Vector3(tile.X + 0.5f, tile.Y + 0.5f, 0f);
+
+            if (_input.Selected.HasValue)
+            {
+                BuildingType type = _input.Selected.Value;
+                bool ok = _world.CanPlace(type, tile) == PlaceResult.Ok;
+                _ghost.enabled = true;
+                _ghost.sprite = _sprites.ForBuilding(type);
+                _ghost.transform.rotation = type == BuildingType.Chest
+                    ? Quaternion.identity
+                    : BuildingView.RotationFor(_input.Facing);
+                _ghost.color = ok ? new Color(1f, 1f, 1f, 0.6f) : Palette.Invalid;
+                _frame.color = ok ? Neutral : Palette.Invalid;
+                return;
+            }
 
             bool mineable = TileYield.Of(_world.GetTile(tile)) != ItemType.None;
             bool inReach = World.IsWithinReach(_player.Tile, tile, _world.Config.HandMineReach);

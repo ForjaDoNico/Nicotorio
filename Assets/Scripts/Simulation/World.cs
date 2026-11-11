@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Factory.Simulation
 {
@@ -16,6 +17,11 @@ namespace Factory.Simulation
         private int _mineProgress;
         private bool _minedSinceLastTick;
 
+        // Buildings: by tile for lookups, and in Id order for deterministic iteration.
+        private readonly Dictionary<GridPos, Building> _buildingsByPos = new Dictionary<GridPos, Building>();
+        private readonly List<Building> _buildings = new List<Building>();
+        private int _nextBuildingId = 1;
+
         public WorldConfig Config { get; }
         public int Width { get; }
         public int Height { get; }
@@ -31,6 +37,12 @@ namespace Factory.Simulation
 
         /// <summary>0..1 progress toward the next hand-mined item.</summary>
         public float MiningProgress01 => (float)_mineProgress / Config.HandMineTicksPerItem;
+
+        /// <summary>All buildings, ordered by Id (placement order).</summary>
+        public IReadOnlyList<Building> Buildings => _buildings;
+
+        /// <summary>Bumped whenever a building is placed or removed.</summary>
+        public int BuildingsVersion { get; private set; }
 
         public World(WorldConfig config)
             : this(config, WorldGenerator.Generate(config))
@@ -78,6 +90,7 @@ namespace Factory.Simulation
         public MineResult MineStep(GridPos target, GridPos playerTile)
         {
             if (!InBounds(target)) return MineResult.NotMineable;
+            if (_buildingsByPos.ContainsKey(target)) return MineResult.NotMineable;
             ItemType item = TileYield.Of(GetTile(target));
             if (item == ItemType.None) return MineResult.NotMineable;
             if (!IsWithinReach(playerTile, target, Config.HandMineReach)) return MineResult.OutOfReach;
@@ -92,6 +105,59 @@ namespace Factory.Simulation
             _mineProgress = 0;
             PlayerInventory.Add(item, 1);
             return MineResult.Produced;
+        }
+
+        /// <summary>Whether a building of this type could be placed here, without placing it.</summary>
+        public PlaceResult CanPlace(BuildingType type, GridPos pos)
+        {
+            if (!InBounds(pos)) return PlaceResult.OutOfBounds;
+            if (_buildingsByPos.ContainsKey(pos)) return PlaceResult.Occupied;
+            if (type == BuildingType.Miner && GetTile(pos) != TileType.IronOre) return PlaceResult.RequiresOre;
+            return PlaceResult.Ok;
+        }
+
+        public PlaceResult TryPlace(BuildingType type, GridPos pos, Direction facing)
+        {
+            PlaceResult result = CanPlace(type, pos);
+            if (result != PlaceResult.Ok) return result;
+
+            Building building = Create(type);
+            building.Id = _nextBuildingId++;
+            building.Position = pos;
+            building.Facing = facing;
+            _buildingsByPos.Add(pos, building);
+            _buildings.Add(building); // Ids only grow, so the list stays in Id order.
+            BuildingsVersion++;
+            return PlaceResult.Ok;
+        }
+
+        /// <summary>
+        /// Removes the building on pos. Anything it held goes to the player's inventory so
+        /// nothing is lost. Returns false if there was no building.
+        /// </summary>
+        public bool TryRemove(GridPos pos)
+        {
+            if (!_buildingsByPos.TryGetValue(pos, out Building building)) return false;
+            if (building is Chest chest) chest.Contents.TransferAllTo(PlayerInventory);
+
+            _buildingsByPos.Remove(pos);
+            _buildings.Remove(building);
+            BuildingsVersion++;
+            return true;
+        }
+
+        public Building GetBuilding(GridPos pos) =>
+            _buildingsByPos.TryGetValue(pos, out Building building) ? building : null;
+
+        private static Building Create(BuildingType type)
+        {
+            switch (type)
+            {
+                case BuildingType.Miner: return new Miner();
+                case BuildingType.Belt: return new Belt();
+                case BuildingType.Chest: return new Chest();
+                default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
+            }
         }
 
         public static bool IsWithinReach(GridPos from, GridPos to, int reach)
