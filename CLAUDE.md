@@ -9,6 +9,8 @@ on disk: everything is created in code when Play is pressed.
 ```
 Assets/Scripts/Simulation/    Factory.Simulation.asmdef  (noEngineReferences: pure C#)
 Assets/Scripts/Presentation/  Factory.Presentation.asmdef (MonoBehaviours, Input System, URP 2D, uGUI)
+Assets/Scripts/Editor/        Factory.Editor.asmdef (sprite import rules + Factory > Sprites menu)
+Assets/Resources/Sprites/     the art: one 16x16 PNG per sprite, packed by Assets/Resources/SpriteAtlas.spriteatlasv2
 Assets/Tests/EditMode/        Factory.Simulation.Tests.asmdef (NUnit, tests the simulation only)
 ```
 
@@ -59,8 +61,14 @@ Assets/Tests/EditMode/        Factory.Simulation.Tests.asmdef (NUnit, tests the 
   - `CursorView` draws the hover frame, the mining bar and the ghost;
   - `HudView` is a uGUI overlay using the legacy `Text` with the built-in font: inventory,
     hotbar and a hovered-chest panel.
-- **Art**: all sprites are generated in `SpriteLibrary` as 16x16, Point filter, 16 PPU, drawn facing Up
-  and rotated by `BuildingView.RotationFor`. Every color comes from `Palette`.
+- **Art**: `SpriteLibrary` loads each sprite with `Resources.Load` from `Assets/Resources/Sprites/<file>.png`.
+  The file names are listed in `SpriteLibrary.Art`.
+  - Sprites are 16x16 and drawn facing Up; `BuildingView.RotationFor` rotates them.
+  - If a PNG is missing, the sprite is drawn in code from the same table, using colors from `Palette`.
+  - `SpriteImportRules` (an AssetPostprocessor) forces pixel-art import settings on that folder:
+    16 PPU, Point filter, uncompressed, no mipmaps. Replacing a PNG needs no Inspector work.
+  - Use the menu **Factory > Sprites** to re-export the code drawings or rebuild the atlas.
+  - Do not put other files such as docs in `Resources/`: everything there ships in the build.
 
 ## Conventions
 - Gameplay rules go in the Simulation assembly, with a test. Presentation only draws and issues commands.
@@ -72,7 +80,7 @@ Assets/Tests/EditMode/        Factory.Simulation.Tests.asmdef (NUnit, tests the 
   - a `BuildingType` value and its `Building` subclass;
   - a case in `World.Create`;
   - a tick system or `TryInsert` case if it moves items;
-  - a sprite in `SpriteLibrary.ForBuilding`;
+  - a sprite (an entry in `SpriteLibrary.Art` plus its PNG, wired in `ForBuilding`);
   - a name in `HudView.BuildingNames`.
 - One commit per feature, with tests passing.
 

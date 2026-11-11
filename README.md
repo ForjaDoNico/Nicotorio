@@ -37,7 +37,28 @@ Protótipo de jogo de automação em visão de cima, feito em **Unity 6** (URP 2
 1. Abra a pasta no **Unity 6000.6.8f1**.
 2. Abra a cena `Assets/Scenes/Factory` e dê **Play**.
 
-A cena está vazia de propósito: a câmera, o mapa, o jogador, a interface e todos os sprites são criados por código quando o jogo começa. Não há arte importada.
+A cena está vazia de propósito: a câmera, o mapa, o jogador e a interface são criados por código quando o jogo começa.
+
+## Gráficos
+
+Os gráficos ficam em **`Assets/Resources/Sprites/`**, um PNG de 16x16 para cada um:
+
+| Arquivo | O que é |
+|---|---|
+| `grass_1.png`, `grass_2.png` | duas variações de grama |
+| `iron_ore.png` | tile de minério de ferro |
+| `player.png` | jogador |
+| `miner.png`, `belt.png`, `chest.png` | mineradora, esteira e baú, **desenhados apontando para cima** |
+| `item_iron_ore.png` | minério andando na esteira |
+| `cursor_frame.png` | moldura do cursor, em branco (o jogo pinta a cor) |
+
+**Para mudar um gráfico, sobrescreva o PNG com o mesmo nome.** O Unity aplica sozinho as configurações de pixel art: 16 pixels por tile, filtro Point, sem compressão e sem mipmaps. Não precisa mexer no Inspector. Todos os sprites são juntados num **Sprite Atlas** (`Assets/Resources/SpriteAtlas.spriteatlasv2`), uma textura só, para o jogo desenhar tudo com poucas chamadas.
+
+No menu **Factory > Sprites** do Unity:
+- **Exportar sprites gerados**: recria os PNGs que estiverem faltando;
+- **Restaurar todos os sprites originais**: volta aos desenhos originais.
+
+Se algum PNG sumir, o jogo continua funcionando e desenha aquele sprite por código.
 
 ## Como foi feito
 

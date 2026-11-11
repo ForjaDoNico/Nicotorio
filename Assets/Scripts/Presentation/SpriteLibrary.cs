@@ -1,18 +1,44 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Factory.Presentation
 {
-    /// <summary>Generates every sprite in code. No art assets on disk.</summary>
+    /// <summary>
+    /// Every sprite the game uses. Each one is loaded from a PNG in
+    /// Assets/Resources/Sprites/&lt;FileName&gt;.png (16x16, drawn facing Up). If that file is
+    /// missing, the sprite is drawn in code instead, so the game always runs. The same
+    /// drawings seed the PNGs: menu Factory > Sprites > Exportar sprites gerados.
+    /// </summary>
     public sealed class SpriteLibrary
     {
         public const int PixelsPerTile = 16;
         private const int N = PixelsPerTile;
+
+        /// <summary>Folder under any Resources/ folder that holds the sprite PNGs.</summary>
+        public const string ResourcesFolder = "Sprites";
+
+        /// <summary>File name (without .png) and code fallback of every art sprite.</summary>
+        public static readonly (string FileName, Func<Color32[]> Draw)[] Art =
+        {
+            ("grass_1", () => DrawGrass(1)),
+            ("grass_2", () => DrawGrass(2)),
+            ("iron_ore", DrawOre),
+            ("player", DrawPlayer),
+            ("cursor_frame", DrawCursorFrame),
+            ("miner", DrawMiner),
+            ("belt", DrawBelt),
+            ("chest", DrawChest),
+            ("item_iron_ore", DrawOreItem),
+        };
 
         public Sprite Grass { get; }
         public Sprite GrassAlt { get; }
         public Sprite IronOre { get; }
         public Sprite Player { get; }
         public Sprite CursorFrame { get; }
+
+        /// <summary>One tile-sized white square for bars and tints. Always code: it is not art.</summary>
         public Sprite WhitePixel { get; }
 
         // Buildings are drawn facing Up; views rotate them to their Direction.
@@ -23,21 +49,36 @@ namespace Factory.Presentation
         // Items (on belts, in miner outputs): small, centered, transparent around.
         public Sprite IronOreItem { get; }
 
+        /// <summary>File names that had no PNG and were drawn in code this run.</summary>
+        public List<string> Fallbacks { get; } = new List<string>();
+
         public SpriteLibrary()
         {
-            Grass = MakeGrass(1);
-            GrassAlt = MakeGrass(2);
-            IronOre = MakeOre();
-            Player = MakePlayer();
-            CursorFrame = MakeCursorFrame();
-            WhitePixel = MakeWhitePixel();
-            Miner = MakeMiner();
-            Belt = MakeBelt();
-            Chest = MakeChest();
-            IronOreItem = MakeOreItem();
-        }
+            var byName = new Dictionary<string, Sprite>();
+            foreach (var (fileName, draw) in Art)
+            {
+                var loaded = Resources.Load<Sprite>(ResourcesFolder + "/" + fileName);
+                if (loaded == null)
+                {
+                    Fallbacks.Add(fileName);
+                    loaded = ToSprite(draw(), fileName);
+                }
+                byName[fileName] = loaded;
+            }
+            if (Fallbacks.Count > 0)
+                Debug.Log($"[SpriteLibrary] Sem PNG em Resources/{ResourcesFolder}, desenhados por código: {string.Join(", ", Fallbacks)}");
 
-        public Sprite ForItem(Factory.Simulation.ItemType item) => IronOreItem;
+            Grass = byName["grass_1"];
+            GrassAlt = byName["grass_2"];
+            IronOre = byName["iron_ore"];
+            Player = byName["player"];
+            CursorFrame = byName["cursor_frame"];
+            Miner = byName["miner"];
+            Belt = byName["belt"];
+            Chest = byName["chest"];
+            IronOreItem = byName["item_iron_ore"];
+            WhitePixel = ToSprite(Fill(new Color32(255, 255, 255, 255)), "white_pixel");
+        }
 
         public Sprite ForBuilding(Factory.Simulation.BuildingType type)
         {
@@ -49,9 +90,22 @@ namespace Factory.Presentation
             }
         }
 
+        public Sprite ForItem(Factory.Simulation.ItemType item) => IronOreItem;
+
+        /// <summary>Encodes a code-drawn sprite as PNG bytes, for the export tool.</summary>
+        public static byte[] EncodePng(Color32[] px)
+        {
+            var tex = new Texture2D(N, N, TextureFormat.RGBA32, false);
+            tex.SetPixels32(px);
+            tex.Apply(false, false);
+            byte[] png = tex.EncodeToPNG();
+            UnityEngine.Object.DestroyImmediate(tex);
+            return png;
+        }
+
         // ---- builders ---------------------------------------------------------------
 
-        private static Sprite MakeGrass(int variant)
+        private static Color32[] DrawGrass(int variant)
         {
             var px = Fill(Palette.Grass);
             for (int y = 0; y < N; y++)
@@ -61,10 +115,10 @@ namespace Factory.Presentation
                 if (h % 11 == 0) px[y * N + x] = Palette.GrassDark;
                 else if (h % 17 == 0) px[y * N + x] = Palette.GrassLight;
             }
-            return ToSprite(px, "Grass" + variant);
+            return px;
         }
 
-        private static Sprite MakeOre()
+        private static Color32[] DrawOre()
         {
             var px = Fill(Palette.Grass);
             // A few chunky rocks: dark outline, ore body, one highlight pixel.
@@ -72,7 +126,7 @@ namespace Factory.Presentation
             DrawRock(px, 8, 8, 6, 5);
             DrawRock(px, 9, 1, 4, 3);
             DrawRock(px, 2, 10, 4, 4);
-            return ToSprite(px, "IronOre");
+            return px;
         }
 
         private static void DrawRock(Color32[] px, int x0, int y0, int w, int h)
@@ -88,7 +142,7 @@ namespace Factory.Presentation
             Set(px, x0 + 1, y0 + h - 2, Palette.OreHighlight);
         }
 
-        private static Sprite MakePlayer()
+        private static Color32[] DrawPlayer()
         {
             var px = Fill(Palette.Clear);
             // Body 10x12 with outline, a trim band, and two eyes looking up.
@@ -107,18 +161,18 @@ namespace Factory.Presentation
             Set(px, 9, 10, Palette.HeroSecondary);
             // Little backpack nub for silhouette.
             for (int x = 6; x <= 9; x++) Set(px, x, 13, Palette.Shadow);
-            return ToSprite(px, "Player");
+            return px;
         }
 
-        private static Sprite MakeOreItem()
+        private static Color32[] DrawOreItem()
         {
             var px = Fill(Palette.Clear);
             DrawRock(px, 5, 5, 6, 6);
             Set(px, 7, 7, Palette.OreHighlight);
-            return ToSprite(px, "IronOreItem");
+            return px;
         }
 
-        private static Sprite MakeMiner()
+        private static Color32[] DrawMiner()
         {
             var px = Fill(Palette.Clear);
             Box(px, 1, 1, 14, 13, Palette.Shadow, Palette.Props);
@@ -129,10 +183,10 @@ namespace Factory.Presentation
             // Output nozzle + arrow at the top edge: the side it delivers to.
             for (int x = 6; x <= 9; x++) Set(px, x, 14, Palette.Shadow);
             Chevron(px, 12, Palette.Accent);
-            return ToSprite(px, "Miner");
+            return px;
         }
 
-        private static Sprite MakeBelt()
+        private static Color32[] DrawBelt()
         {
             var px = Fill(Palette.Shadow);
             // Rails on both sides, a lighter bed, and two chevrons pointing along the belt.
@@ -146,17 +200,17 @@ namespace Factory.Presentation
             }
             Chevron(px, 13, Palette.Path);
             Chevron(px, 6, Palette.Path);
-            return ToSprite(px, "Belt");
+            return px;
         }
 
-        private static Sprite MakeChest()
+        private static Color32[] DrawChest()
         {
             var px = Fill(Palette.Clear);
             Box(px, 1, 2, 14, 12, Palette.Shadow, Palette.Path);
             for (int x = 2; x <= 13; x++) Set(px, x, 9, Palette.Shadow);   // lid seam
             for (int x = 2; x <= 13; x++) Set(px, x, 12, Palette.PathLight); // lid highlight
             Box(px, 7, 7, 2, 4, Palette.Shadow, Palette.Accent);           // latch
-            return ToSprite(px, "Chest");
+            return px;
         }
 
         /// <summary>A "^" pointing up with its apex on row top, 2 px thick, centered.</summary>
@@ -182,7 +236,7 @@ namespace Factory.Presentation
         }
 
         /// <summary>White corner brackets; tinted per state by the cursor view.</summary>
-        private static Sprite MakeCursorFrame()
+        private static Color32[] DrawCursorFrame()
         {
             var px = Fill(Palette.Clear);
             var w = new Color32(255, 255, 255, 255);
@@ -193,11 +247,9 @@ namespace Factory.Presentation
                 Set(px, i, N - 1, w); Set(px, 0, N - 1 - i, w);
                 Set(px, N - 1 - i, N - 1, w); Set(px, N - 1, N - 1 - i, w);
             }
-            return ToSprite(px, "CursorFrame");
+            return px;
         }
 
-        /// <summary>One tile-sized white square, for bars and tints.</summary>
-        private static Sprite MakeWhitePixel() => ToSprite(Fill(new Color32(255, 255, 255, 255)), "WhitePixel");
 
         // ---- helpers ----------------------------------------------------------------
 
