@@ -48,6 +48,18 @@ namespace Factory.Presentation
             var cameraFollow = new GameObject("Main Camera").AddComponent<CameraFollow>();
             cameraFollow.transform.SetParent(root.transform, false);
             cameraFollow.Init(player.transform, world.Width, world.Height);
+
+            var input = new GameObject("Input").AddComponent<CommandInput>();
+            input.transform.SetParent(root.transform, false);
+            input.Init(world, runner, player, cameraFollow.Camera);
+
+            var cursor = new GameObject("Cursor").AddComponent<CursorView>();
+            cursor.transform.SetParent(root.transform, false);
+            cursor.Init(world, input, player, sprites);
+
+            var hud = new GameObject("HUD").AddComponent<HudView>();
+            hud.transform.SetParent(root.transform, false);
+            hud.Init(world);
         }
     }
 }

@@ -15,6 +15,12 @@ namespace Factory.Simulation
         public int OrePatchMinRadius = 2;
         public int OrePatchMaxRadius = 5;
 
+        // Hand mining.
+        /// <summary>Consecutive ticks of holding mine on one tile to get one item (10 = 0.5 s).</summary>
+        public int HandMineTicksPerItem = 10;
+        /// <summary>Max distance in tiles (Euclidean, tile centers) from the player to the mined tile.</summary>
+        public int HandMineReach = 3;
+
         /// <summary>Where the player starts. The generator always puts one ore patch near it.</summary>
         public GridPos PlayerSpawn => new GridPos(Width / 2, Height / 2);
     }

@@ -12,6 +12,8 @@ namespace Factory.Presentation
         public Sprite GrassAlt { get; }
         public Sprite IronOre { get; }
         public Sprite Player { get; }
+        public Sprite CursorFrame { get; }
+        public Sprite WhitePixel { get; }
 
         public SpriteLibrary()
         {
@@ -19,6 +21,8 @@ namespace Factory.Presentation
             GrassAlt = MakeGrass(2);
             IronOre = MakeOre();
             Player = MakePlayer();
+            CursorFrame = MakeCursorFrame();
+            WhitePixel = MakeWhitePixel();
         }
 
         // ---- builders ---------------------------------------------------------------
@@ -81,6 +85,24 @@ namespace Factory.Presentation
             for (int x = 6; x <= 9; x++) Set(px, x, 13, Palette.Shadow);
             return ToSprite(px, "Player");
         }
+
+        /// <summary>White corner brackets; tinted per state by the cursor view.</summary>
+        private static Sprite MakeCursorFrame()
+        {
+            var px = Fill(Palette.Clear);
+            var w = new Color32(255, 255, 255, 255);
+            for (int i = 0; i < 4; i++)
+            {
+                Set(px, i, 0, w); Set(px, 0, i, w);
+                Set(px, N - 1 - i, 0, w); Set(px, N - 1, i, w);
+                Set(px, i, N - 1, w); Set(px, 0, N - 1 - i, w);
+                Set(px, N - 1 - i, N - 1, w); Set(px, N - 1, N - 1 - i, w);
+            }
+            return ToSprite(px, "CursorFrame");
+        }
+
+        /// <summary>One tile-sized white square, for bars and tints.</summary>
+        private static Sprite MakeWhitePixel() => ToSprite(Fill(new Color32(255, 255, 255, 255)), "WhitePixel");
 
         // ---- helpers ----------------------------------------------------------------
 
