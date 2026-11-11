@@ -34,6 +34,10 @@ namespace Factory.Presentation
         private GridPos? _lastPlaceTile;
         private GridPos? _lastRemoveTile;
 
+        // Set when a placement in the current drag failed for lack of items: the drag stops
+        // placing until the button is released, instead of resuming if items show up.
+        private bool _outOfItemsThisDrag;
+
         /// <summary>Tile under the mouse this frame (may be out of bounds).</summary>
         public GridPos HoverTile { get; private set; }
 
@@ -101,7 +105,7 @@ namespace Factory.Presentation
             }
 
             // Place: on press, then once per new tile while held.
-            if (_place.IsPressed() && Selected.HasValue && _world.InBounds(HoverTile))
+            if (_place.IsPressed() && Selected.HasValue && _world.InBounds(HoverTile) && !_outOfItemsThisDrag)
             {
                 if (_lastPlaceTile != HoverTile)
                 {
@@ -109,9 +113,10 @@ namespace Factory.Presentation
                     _lastPlaceTile = HoverTile;
                 }
             }
-            else
+            else if (!_place.IsPressed())
             {
                 _lastPlaceTile = null;
+                _outOfItemsThisDrag = false;
             }
 
             // Remove: same drag behaviour with X.
@@ -142,7 +147,11 @@ namespace Factory.Presentation
             {
                 switch (c.Kind)
                 {
-                    case CommandKind.Place: _world.TryPlace(c.Type, c.Tile, c.Facing); break;
+                    case CommandKind.Place:
+                        if (_outOfItemsThisDrag) break; // rest of this drag's queue is dropped
+                        if (_world.TryPlace(c.Type, c.Tile, c.Facing) == PlaceResult.NotEnoughItems)
+                            _outOfItemsThisDrag = true;
+                        break;
                     case CommandKind.Remove: _world.TryRemove(c.Tile); break;
                     case CommandKind.TakeFromChest: _world.TakeAllFromChest(c.Tile); break;
                     case CommandKind.InteractWithFurnace: _world.InteractWithFurnace(c.Tile); break;

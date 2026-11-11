@@ -40,6 +40,22 @@ namespace Factory.Simulation
         /// <summary>Minimum gap between two items on a belt (250 = up to 5 items per belt).</summary>
         public int BeltItemSpacing = 250;
 
+        // Building costs and the player's start.
+        /// <summary>
+        /// What each building costs. Paid from the player's inventory on placement and
+        /// refunded in full on removal. One line per (building, item).
+        /// </summary>
+        public BuildCost[] BuildCosts =
+        {
+            new BuildCost(BuildingType.Furnace, ItemType.IronOre,   5),
+            new BuildCost(BuildingType.Miner,   ItemType.IronPlate, 3),
+            new BuildCost(BuildingType.Belt,    ItemType.IronPlate, 1),
+            new BuildCost(BuildingType.Chest,   ItemType.IronPlate, 2),
+        };
+
+        /// <summary>Items the player starts with. Empty: everything starts from hand mining.</summary>
+        public ItemAmount[] StartingInventory = { };
+
         /// <summary>Where the player starts. The generator always puts one ore patch near it.</summary>
         public GridPos PlayerSpawn => new GridPos(Width / 2, Height / 2);
     }

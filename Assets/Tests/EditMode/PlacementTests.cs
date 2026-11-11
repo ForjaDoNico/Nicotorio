@@ -9,7 +9,7 @@ namespace Factory.Simulation.Tests
 
         private static World MakeWorld()
         {
-            var world = World.CreateEmpty(10, 10);
+            var world = TestWorlds.Empty(10, 10);
             world.SetTile(OreTile, TileType.IronOre);
             return world;
         }

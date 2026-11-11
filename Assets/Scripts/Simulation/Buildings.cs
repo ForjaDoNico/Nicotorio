@@ -16,6 +16,7 @@ namespace Factory.Simulation
         OutOfBounds,
         Occupied,
         RequiresOre,
+        NotEnoughItems,
     }
 
     /// <summary>

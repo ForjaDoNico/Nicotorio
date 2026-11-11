@@ -58,6 +58,9 @@ namespace Factory.Simulation
             if (tiles == null || tiles.Length != Width * Height)
                 throw new ArgumentException("Tile array must be Width * Height long.", nameof(tiles));
             _tiles = tiles;
+
+            foreach (ItemAmount start in config.StartingInventory)
+                if (start.Count > 0) PlayerInventory.Add(start.Item, start.Count);
         }
 
         /// <summary>A world with no ore at all; tests paint the tiles they need.</summary>
@@ -113,13 +116,32 @@ namespace Factory.Simulation
             if (!InBounds(pos)) return PlaceResult.OutOfBounds;
             if (_buildingsByPos.ContainsKey(pos)) return PlaceResult.Occupied;
             if (type == BuildingType.Miner && GetTile(pos) != TileType.IronOre) return PlaceResult.RequiresOre;
+            if (!CanAfford(type)) return PlaceResult.NotEnoughItems;
             return PlaceResult.Ok;
+        }
+
+        /// <summary>Whether the player's inventory covers every line of the building's cost.</summary>
+        public bool CanAfford(BuildingType type)
+        {
+            foreach (BuildCost cost in Config.BuildCosts)
+            {
+                if (cost.Building != type) continue;
+                // Sum lines for the same item, in case the table splits one item over two lines.
+                int needed = 0;
+                foreach (BuildCost other in Config.BuildCosts)
+                    if (other.Building == type && other.Item == cost.Item) needed += other.Count;
+                if (PlayerInventory.Count(cost.Item) < needed) return false;
+            }
+            return true;
         }
 
         public PlaceResult TryPlace(BuildingType type, GridPos pos, Direction facing)
         {
             PlaceResult result = CanPlace(type, pos);
             if (result != PlaceResult.Ok) return result;
+
+            foreach (BuildCost cost in Config.BuildCosts)
+                if (cost.Building == type) PlayerInventory.Remove(cost.Item, cost.Count);
 
             Building building = Create(type);
             building.Id = _nextBuildingId++;
@@ -132,12 +154,14 @@ namespace Factory.Simulation
         }
 
         /// <summary>
-        /// Removes the building on pos. Anything it held goes to the player's inventory so
-        /// nothing is lost. Returns false if there was no building.
+        /// Removes the building on pos. Its build cost is refunded and anything it held goes
+        /// to the player's inventory, so nothing is lost. Returns false if there was no building.
         /// </summary>
         public bool TryRemove(GridPos pos)
         {
             if (!_buildingsByPos.TryGetValue(pos, out Building building)) return false;
+            foreach (BuildCost cost in Config.BuildCosts)
+                if (cost.Building == building.Type && cost.Count > 0) PlayerInventory.Add(cost.Item, cost.Count);
             if (building is Chest chest) chest.Contents.TransferAllTo(PlayerInventory);
             if (building is Miner miner && miner.Output != ItemType.None) PlayerInventory.Add(miner.Output, 1);
             if (building is Belt belt)

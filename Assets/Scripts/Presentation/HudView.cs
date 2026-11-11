@@ -21,6 +21,7 @@ namespace Factory.Presentation
         private long _shownHoverSignature = -1;
         private int _shownVersion = -1;
         private int _shownSelectionVersion = -1;
+        private int _shownHotbarInventoryVersion = -1;
         private readonly StringBuilder _sb = new StringBuilder();
 
         public void Init(World world, CommandInput input)
@@ -155,23 +156,47 @@ namespace Factory.Presentation
 
         private void RefreshHotbar()
         {
-            if (_input.SelectionVersion == _shownSelectionVersion) return;
+            int invVersion = _world.PlayerInventory.Version;
+            if (_input.SelectionVersion == _shownSelectionVersion && invVersion == _shownHotbarInventoryVersion) return;
             _shownSelectionVersion = _input.SelectionVersion;
+            _shownHotbarInventoryVersion = invVersion;
 
             string accent = "#" + ColorUtility.ToHtmlStringRGB(Palette.Accent);
+            string disabled = "#" + ColorUtility.ToHtmlStringRGB(Palette.Disabled);
             _sb.Clear();
             for (int i = 0; i < BuildingNames.All.Length; i++)
             {
                 var type = BuildingNames.All[i];
                 bool selected = _input.Selected == type;
+                bool affordable = _world.CanAfford(type);
                 if (i > 0) _sb.Append("    ");
-                if (selected) _sb.Append("<color=").Append(accent).Append("><b>");
+                // Unaffordable is grey even when selected, so it's clear why clicking does nothing.
+                string color = !affordable ? disabled : selected ? accent : null;
+                if (color != null) _sb.Append("<color=").Append(color).Append('>');
+                if (selected) _sb.Append("<b>");
                 _sb.Append('[').Append(i + 1).Append("] ").Append(BuildingNames.Of(type));
-                if (selected) _sb.Append("</b></color>");
+                if (selected) _sb.Append("</b>");
+                _sb.Append(" <size=22>");
+                AppendCost(type);
+                _sb.Append("</size>");
+                if (color != null) _sb.Append("</color>");
             }
             _sb.Append("\n<size=24>R: girar (").Append(BuildingNames.Of(_input.Facing)).Append(")    ")
                .Append("Esq: construir / usar baú ou fornalha    Dir: minerar    X: remover</size>");
             _hotbarText.text = _sb.ToString();
+        }
+
+        private void AppendCost(BuildingType type)
+        {
+            bool first = true;
+            foreach (BuildCost cost in _world.Config.BuildCosts)
+            {
+                if (cost.Building != type) continue;
+                if (!first) _sb.Append(" + ");
+                _sb.Append(cost.Count).Append(' ').Append(ItemNames.Short(cost.Item, cost.Count));
+                first = false;
+            }
+            if (first) _sb.Append("grátis");
         }
     }
 
@@ -212,6 +237,17 @@ namespace Factory.Presentation
             {
                 case ItemType.IronOre: return "Minério de ferro";
                 case ItemType.IronPlate: return "Placa de ferro";
+                default: return item.ToString();
+            }
+        }
+
+        /// <summary>Short lowercase name for costs, e.g. "3 placas", "1 minério".</summary>
+        public static string Short(ItemType item, int count)
+        {
+            switch (item)
+            {
+                case ItemType.IronOre: return count == 1 ? "minério" : "minérios";
+                case ItemType.IronPlate: return count == 1 ? "placa" : "placas";
                 default: return item.ToString();
             }
         }
