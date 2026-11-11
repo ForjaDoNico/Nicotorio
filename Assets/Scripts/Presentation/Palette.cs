@@ -30,6 +30,8 @@ namespace Factory.Presentation
         public static readonly Color32 LeafLight = Hex(0x4A8A4A);
         public static readonly Color32 Bark = Hex(0x6B4A2F);
         public static readonly Color32 BarkLight = Hex(0x9A7048);
+        /// <summary>Text for what is missing (e.g. crafting ingredients).</summary>
+        public static readonly Color32 Missing = Hex(0xE5604D);
         /// <summary>Text for things the player can't afford right now.</summary>
         public static readonly Color32 Disabled = Hex(0x8A8794);
         public static readonly Color32 Clear = new Color32(0, 0, 0, 0);

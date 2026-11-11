@@ -75,9 +75,9 @@ namespace Factory.Presentation
                 bool ok = _world.CanPlace(type, tile) == PlaceResult.Ok;
                 _ghost.enabled = true;
                 _ghost.sprite = _sprites.ForBuilding(type);
-                _ghost.transform.rotation = type == BuildingType.Chest
-                    ? Quaternion.identity
-                    : BuildingView.RotationFor(_input.Facing);
+                _ghost.transform.rotation = BuildingView.IsDirectional(type)
+                    ? BuildingView.RotationFor(_input.Facing)
+                    : Quaternion.identity;
                 _ghost.color = ok ? new Color(1f, 1f, 1f, 0.6f) : Palette.Invalid;
                 _frame.color = ok ? Neutral : Palette.Invalid;
                 return;

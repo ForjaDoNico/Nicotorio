@@ -8,6 +8,7 @@ namespace Factory.Simulation
         Belt = 1,
         Chest = 2,
         Furnace = 3,
+        CraftingTable = 4,
     }
 
     public enum PlaceResult : byte
@@ -70,6 +71,12 @@ namespace Factory.Simulation
 
         /// <summary>Ticks spent on the item being smelted. Frozen while the furnace can't work.</summary>
         public int Progress { get; internal set; }
+    }
+
+    /// <summary>Where the player crafts (see World.TryCraft). It holds nothing and does nothing per tick.</summary>
+    public sealed class CraftingTable : Building
+    {
+        public override BuildingType Type => BuildingType.CraftingTable;
     }
 
     /// <summary>One item riding a belt. Plain data: never a GameObject.</summary>

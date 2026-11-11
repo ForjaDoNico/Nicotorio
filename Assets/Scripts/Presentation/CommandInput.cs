@@ -14,7 +14,7 @@ namespace Factory.Presentation
     /// </summary>
     public sealed class CommandInput : MonoBehaviour
     {
-        private enum CommandKind : byte { Place, Remove, TakeFromChest, LoadFurnaceInput, LoadFurnaceFuel, TakeFurnaceOutput }
+        private enum CommandKind : byte { Place, Remove, TakeFromChest, LoadFurnaceInput, LoadFurnaceFuel, TakeFurnaceOutput, Craft }
 
         private struct Command
         {
@@ -22,13 +22,16 @@ namespace Factory.Presentation
             public BuildingType Type;
             public GridPos Tile;
             public Direction Facing;
+            public int RecipeId;
+            public int Times;
         }
 
         private World _world;
         private PlayerController _player;
         private Camera _camera;
 
-        private InputAction _mine, _place, _remove, _rotate, _select1, _select2, _select3, _select4;
+        private InputAction _mine, _place, _remove, _rotate;
+        private InputAction[] _selectKeys; // key N selects BuildingNames.All[N - 1]
         private readonly List<Command> _pending = new List<Command>();
 
         // Drag-building: while a button is held, each new tile under the mouse gets one command.
@@ -44,11 +47,12 @@ namespace Factory.Presentation
         private bool _clickUsedByUi;
 
         private FurnaceWindow _furnaceWindow;
+        private CraftingWindow _craftingWindow;
 
         /// <summary>Tile under the mouse this frame (may be out of bounds).</summary>
         public GridPos HoverTile { get; private set; }
 
-        /// <summary>Building chosen with 1/2/3, or null when building is off.</summary>
+        /// <summary>Building chosen with the number keys, or null when building is off.</summary>
         public BuildingType? Selected { get; private set; }
 
         /// <summary>Facing for the next placed building, changed with R.</summary>
@@ -67,16 +71,32 @@ namespace Factory.Presentation
             _place = Button("Place", "<Mouse>/leftButton");
             _remove = Button("Remove", "<Keyboard>/x");
             _rotate = Button("Rotate", "<Keyboard>/r");
-            _select1 = Button("Select1", "<Keyboard>/1");
-            _select2 = Button("Select2", "<Keyboard>/2");
-            _select3 = Button("Select3", "<Keyboard>/3");
-            _select4 = Button("Select4", "<Keyboard>/4");
+            _selectKeys = new InputAction[BuildingNames.All.Length];
+            for (int i = 0; i < _selectKeys.Length; i++)
+                _selectKeys[i] = Button("Select" + (i + 1), "<Keyboard>/" + (i + 1));
 
             runner.BeforeTick += ApplyCommands;
         }
 
-        /// <summary>Connects the furnace window, which is created after this component.</summary>
-        public void AttachFurnaceWindow(FurnaceWindow window) => _furnaceWindow = window;
+        /// <summary>Connects the building windows, which are created after this component.</summary>
+        public void AttachWindows(FurnaceWindow furnace, CraftingWindow crafting)
+        {
+            _furnaceWindow = furnace;
+            _craftingWindow = crafting;
+        }
+
+        /// <summary>Queues crafting at a table; applied at the next tick like every command.</summary>
+        public void QueueCraft(GridPos table, int recipeId, int times) =>
+            _pending.Add(new Command { Kind = CommandKind.Craft, Tile = table, RecipeId = recipeId, Times = times });
+
+        private bool AnyWindowOpen =>
+            (_furnaceWindow != null && _furnaceWindow.IsOpen) || (_craftingWindow != null && _craftingWindow.IsOpen);
+
+        private void CloseWindows()
+        {
+            if (_furnaceWindow != null) _furnaceWindow.Close();
+            if (_craftingWindow != null) _craftingWindow.Close();
+        }
 
         /// <summary>Queues a furnace window action; applied at the next tick like every command.</summary>
         public void QueueFurnaceAction(GridPos furnace, FurnaceAction action)
@@ -103,10 +123,8 @@ namespace Factory.Presentation
             if (_world == null) return;
             HoverTile = PointerTile();
 
-            if (_select1.WasPressedThisFrame()) ToggleSelect(BuildingType.Miner);
-            if (_select2.WasPressedThisFrame()) ToggleSelect(BuildingType.Belt);
-            if (_select3.WasPressedThisFrame()) ToggleSelect(BuildingType.Chest);
-            if (_select4.WasPressedThisFrame()) ToggleSelect(BuildingType.Furnace);
+            for (int i = 0; i < _selectKeys.Length; i++)
+                if (_selectKeys[i].WasPressedThisFrame()) ToggleSelect(BuildingNames.All[i]);
             if (_rotate.WasPressedThisFrame())
             {
                 Facing = Facing.RotateClockwise();
@@ -115,8 +133,8 @@ namespace Factory.Presentation
 
             bool overUi = PointerOverUi();
 
-            // A left click that starts on a chest takes its contents; on a furnace it opens its
-            // window; anywhere else in the world it closes an open window (and only does that).
+            // A left click that starts on a chest takes its contents; on a furnace or crafting table
+            // it opens that window; anywhere else in the world it closes an open window (and only that).
             if (_place.WasPressedThisFrame())
             {
                 if (overUi)
@@ -133,12 +151,19 @@ namespace Factory.Presentation
                     }
                     else if (clicked is Furnace && _furnaceWindow != null)
                     {
+                        CloseWindows();
                         _furnaceWindow.Open(HoverTile);
                         _lastPlaceTile = HoverTile;
                     }
-                    else if (_furnaceWindow != null && _furnaceWindow.IsOpen)
+                    else if (clicked is CraftingTable && _craftingWindow != null)
                     {
-                        _furnaceWindow.Close();
+                        CloseWindows();
+                        _craftingWindow.Open(HoverTile);
+                        _lastPlaceTile = HoverTile;
+                    }
+                    else if (AnyWindowOpen)
+                    {
+                        CloseWindows();
                         _clickUsedByUi = true;
                     }
                 }
@@ -199,6 +224,7 @@ namespace Factory.Presentation
                     case CommandKind.LoadFurnaceInput: _world.LoadFurnaceInput(c.Tile); break;
                     case CommandKind.LoadFurnaceFuel: _world.LoadFurnaceFuel(c.Tile); break;
                     case CommandKind.TakeFurnaceOutput: _world.TakeFurnaceOutput(c.Tile); break;
+                    case CommandKind.Craft: _world.TryCraft(c.Tile, _player.Tile, c.RecipeId, c.Times); break;
                 }
             }
             _pending.Clear();
@@ -223,10 +249,8 @@ namespace Factory.Presentation
             _place?.Dispose();
             _remove?.Dispose();
             _rotate?.Dispose();
-            _select1?.Dispose();
-            _select2?.Dispose();
-            _select3?.Dispose();
-            _select4?.Dispose();
+            if (_selectKeys != null)
+                foreach (InputAction key in _selectKeys) key?.Dispose();
         }
     }
 }

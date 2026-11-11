@@ -78,7 +78,10 @@ namespace Factory.Presentation
             var furnaceWindow = new GameObject("FurnaceWindow").AddComponent<FurnaceWindow>();
             furnaceWindow.transform.SetParent(root.transform, false);
             furnaceWindow.Init(world, input, player, sprites);
-            input.AttachFurnaceWindow(furnaceWindow);
+            var craftingWindow = new GameObject("CraftingWindow").AddComponent<CraftingWindow>();
+            craftingWindow.transform.SetParent(root.transform, false);
+            craftingWindow.Init(world, input, player, sprites);
+            input.AttachWindows(furnaceWindow, craftingWindow);
         }
     }
 }

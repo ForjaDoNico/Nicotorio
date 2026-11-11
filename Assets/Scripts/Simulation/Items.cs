@@ -10,6 +10,7 @@ namespace Factory.Simulation
         IronPlate = 2,
         Coal = 3,
         Wood = 4,
+        IronGear = 5,
     }
 
     /// <summary>

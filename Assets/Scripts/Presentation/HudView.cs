@@ -188,7 +188,7 @@ namespace Factory.Presentation
                 if (color != null) _sb.Append("</color>");
             }
             _sb.Append("\n<size=24>R: girar (").Append(BuildingNames.Of(_input.Facing)).Append(")    ")
-               .Append("Esq: construir / abrir baú ou fornalha    Dir: minerar    X: remover</size>");
+               .Append("Esq: construir / abrir baú, fornalha ou bancada    Dir: minerar    X: remover</size>");
             _hotbarText.text = _sb.ToString();
         }
 
@@ -210,7 +210,7 @@ namespace Factory.Presentation
     {
         /// <summary>Hotbar order; index + 1 is the number key.</summary>
         public static readonly BuildingType[] All =
-            { BuildingType.Miner, BuildingType.Belt, BuildingType.Chest, BuildingType.Furnace };
+            { BuildingType.Miner, BuildingType.Belt, BuildingType.Chest, BuildingType.Furnace, BuildingType.CraftingTable };
 
         public static string Of(BuildingType type)
         {
@@ -219,6 +219,7 @@ namespace Factory.Presentation
                 case BuildingType.Miner: return "Mineradora";
                 case BuildingType.Belt: return "Esteira";
                 case BuildingType.Furnace: return "Fornalha";
+                case BuildingType.CraftingTable: return "Bancada";
                 default: return "Baú";
             }
         }
@@ -245,6 +246,7 @@ namespace Factory.Presentation
                 case ItemType.IronPlate: return "Placa de ferro";
                 case ItemType.Coal: return "Carvão";
                 case ItemType.Wood: return "Madeira";
+                case ItemType.IronGear: return "Engrenagem de ferro";
                 default: return item.ToString();
             }
         }
@@ -258,6 +260,7 @@ namespace Factory.Presentation
                 case ItemType.IronPlate: return count == 1 ? "placa" : "placas";
                 case ItemType.Coal: return count == 1 ? "carvão" : "carvões";
                 case ItemType.Wood: return count == 1 ? "madeira" : "madeiras";
+                case ItemType.IronGear: return count == 1 ? "engrenagem" : "engrenagens";
                 default: return item.ToString();
             }
         }

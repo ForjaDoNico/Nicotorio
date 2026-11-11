@@ -25,6 +25,10 @@ namespace Factory.Presentation
             _sprites = sprites;
         }
 
+        /// <summary>Buildings with an output side are drawn rotated; chests and tables always look the same.</summary>
+        public static bool IsDirectional(BuildingType type) =>
+            type != BuildingType.Chest && type != BuildingType.CraftingTable;
+
         public static Quaternion RotationFor(Direction facing) =>
             Quaternion.Euler(0f, 0f, -90f * (int)facing); // Directions are clockwise from Up
 
@@ -43,7 +47,7 @@ namespace Factory.Presentation
                 r.sprite = _sprites.ForBuilding(b.Type);
                 r.name = $"{b.Type} #{b.Id}";
                 r.transform.position = new Vector3(b.Position.X + 0.5f, b.Position.Y + 0.5f, 0f);
-                r.transform.rotation = b.Type == BuildingType.Chest ? Quaternion.identity : RotationFor(b.Facing);
+                r.transform.rotation = IsDirectional(b.Type) ? RotationFor(b.Facing) : Quaternion.identity;
                 _byId.Add(b.Id, r);
             }
 

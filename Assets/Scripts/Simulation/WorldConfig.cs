@@ -66,11 +66,32 @@ namespace Factory.Simulation
         /// </summary>
         public BuildCost[] BuildCosts =
         {
+            new BuildCost(BuildingType.CraftingTable, ItemType.Wood, 5),
             new BuildCost(BuildingType.Furnace, ItemType.IronOre,   5),
             new BuildCost(BuildingType.Miner,   ItemType.IronPlate, 3),
             new BuildCost(BuildingType.Belt,    ItemType.IronPlate, 1),
             new BuildCost(BuildingType.Chest,   ItemType.IronPlate, 2),
         };
+
+        // Crafting.
+        /// <summary>
+        /// Everything the crafting table can make. Ids are stable: never renumber, only add.
+        /// </summary>
+        public CraftingRecipe[] CraftingRecipes =
+        {
+            new CraftingRecipe(1, new ItemAmount(ItemType.IronGear, 1), new ItemAmount(ItemType.IronPlate, 2)),
+        };
+
+        /// <summary>Max distance in tiles (Euclidean) from the player to a crafting table to use it.</summary>
+        public int CraftingReach = 6;
+
+        /// <summary>The recipe with this Id, or null.</summary>
+        public CraftingRecipe FindRecipe(int id)
+        {
+            foreach (CraftingRecipe recipe in CraftingRecipes)
+                if (recipe.Id == id) return recipe;
+            return null;
+        }
 
         /// <summary>Items the player starts with. Empty: everything starts from hand mining.</summary>
         public ItemAmount[] StartingInventory = { };

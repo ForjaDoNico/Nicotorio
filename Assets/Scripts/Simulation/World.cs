@@ -272,6 +272,27 @@ namespace Factory.Simulation
             return n;
         }
 
+        /// <summary>
+        /// Crafts recipeId up to times times at the crafting table on tablePos, instantly, from the
+        /// player's inventory. Refused (returns 0) without a table there, with the player
+        /// (standing on playerTile) farther than CraftingReach, or with an unknown recipe.
+        /// Makes as many as the ingredients allow; returns how many it made.
+        /// </summary>
+        public int TryCraft(GridPos tablePos, GridPos playerTile, int recipeId, int times)
+        {
+            if (times <= 0) return 0;
+            if (!(GetBuilding(tablePos) is CraftingTable)) return 0;
+            if (!IsWithinReach(playerTile, tablePos, Config.CraftingReach)) return 0;
+            CraftingRecipe recipe = Config.FindRecipe(recipeId);
+            if (recipe == null) return 0;
+
+            int n = Math.Min(times, Crafting.MaxCraftable(recipe, PlayerInventory));
+            if (n <= 0) return 0;
+            foreach (ItemAmount ing in recipe.Ingredients) PlayerInventory.Remove(ing.Item, ing.Count * n);
+            PlayerInventory.Add(recipe.Result.Item, recipe.Result.Count * n);
+            return n;
+        }
+
         public Building GetBuilding(GridPos pos) =>
             _buildingsByPos.TryGetValue(pos, out Building building) ? building : null;
 
@@ -283,6 +304,7 @@ namespace Factory.Simulation
                 case BuildingType.Belt: return new Belt();
                 case BuildingType.Chest: return new Chest();
                 case BuildingType.Furnace: return new Furnace();
+                case BuildingType.CraftingTable: return new CraftingTable();
                 default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
         }

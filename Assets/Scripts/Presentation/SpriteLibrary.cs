@@ -36,6 +36,8 @@ namespace Factory.Presentation
             ("item_coal", DrawCoalItem),
             ("tree", DrawTree),
             ("item_wood", DrawWoodItem),
+            ("crafting_table", DrawCraftingTable),
+            ("item_iron_gear", DrawGearItem),
         };
 
         public Sprite Grass { get; }
@@ -54,12 +56,14 @@ namespace Factory.Presentation
         public Sprite Belt { get; }
         public Sprite Chest { get; }
         public Sprite Furnace { get; }
+        public Sprite CraftingTable { get; }
 
         // Items (on belts, in miner outputs): small, centered, transparent around.
         public Sprite IronOreItem { get; }
         public Sprite IronPlateItem { get; }
         public Sprite CoalItem { get; }
         public Sprite WoodItem { get; }
+        public Sprite IronGearItem { get; }
 
         /// <summary>File names that had no PNG and were drawn in code this run.</summary>
         public List<string> Fallbacks { get; } = new List<string>();
@@ -95,6 +99,8 @@ namespace Factory.Presentation
             CoalItem = byName["item_coal"];
             Tree = byName["tree"];
             WoodItem = byName["item_wood"];
+            CraftingTable = byName["crafting_table"];
+            IronGearItem = byName["item_iron_gear"];
             WhitePixel = ToSprite(Fill(new Color32(255, 255, 255, 255)), "white_pixel");
         }
 
@@ -105,6 +111,7 @@ namespace Factory.Presentation
                 case Factory.Simulation.BuildingType.Miner: return Miner;
                 case Factory.Simulation.BuildingType.Belt: return Belt;
                 case Factory.Simulation.BuildingType.Furnace: return Furnace;
+                case Factory.Simulation.BuildingType.CraftingTable: return CraftingTable;
                 default: return Chest;
             }
         }
@@ -116,6 +123,7 @@ namespace Factory.Presentation
                 case Factory.Simulation.ItemType.IronPlate: return IronPlateItem;
                 case Factory.Simulation.ItemType.Coal: return CoalItem;
                 case Factory.Simulation.ItemType.Wood: return WoodItem;
+                case Factory.Simulation.ItemType.IronGear: return IronGearItem;
                 default: return IronOreItem;
             }
         }
@@ -184,6 +192,39 @@ namespace Factory.Presentation
                 Color32 c = d2 > 120 ? Palette.Shadow : Palette.Leaf;
                 if (d2 <= 120 && dx < -2 && dy > 2) c = Palette.LeafLight;
                 Set(px, x, y, c);
+            }
+            return px;
+        }
+
+        private static Color32[] DrawCraftingTable()
+        {
+            var px = Fill(Palette.Clear);
+            // Wooden top with plank lines, two legs, and a little saw and hammer on it.
+            Box(px, 1, 5, 14, 9, Palette.Shadow, Palette.BarkLight);
+            for (int x = 2; x <= 13; x++) { Set(px, x, 8, Palette.Bark); Set(px, x, 11, Palette.Bark); }
+            for (int y = 1; y <= 4; y++) { Set(px, 2, y, Palette.Shadow); Set(px, 3, y, Palette.Bark); Set(px, 12, y, Palette.Bark); Set(px, 13, y, Palette.Shadow); }
+            for (int x = 4; x <= 8; x++) Set(px, x, 12, Palette.Plate);   // saw blade
+            Set(px, 9, 12, Palette.Bark);
+            for (int y = 9; y <= 12; y++) Set(px, 11, y, Palette.Bark);   // hammer handle
+            Set(px, 10, 12, Palette.Stone); Set(px, 12, 12, Palette.Stone); // hammer head
+            return px;
+        }
+
+        private static Color32[] DrawGearItem()
+        {
+            var px = Fill(Palette.Clear);
+            // An 8-tooth gear with a hole, ~10 px across.
+            for (int y = 3; y <= 12; y++)
+            for (int x = 3; x <= 12; x++)
+            {
+                int dx = 2 * x - 15, dy = 2 * y - 15; // centre (7.5, 7.5), doubled
+                int d2 = dx * dx + dy * dy;
+                bool tooth = (dx == 1 || dx == -1 || dy == 1 || dy == -1 || dx == dy || dx == -dy) && d2 <= 100;
+                bool body = d2 <= 52;
+                if (!tooth && !body) continue;
+                if (d2 <= 8) continue; // hole
+                bool edge = d2 > 36 && !tooth || d2 > 80;
+                Set(px, x, y, edge ? Palette.Shadow : (d2 <= 20 ? Palette.PlateDark : Palette.Plate));
             }
             return px;
         }
