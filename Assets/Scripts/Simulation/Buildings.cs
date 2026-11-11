@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Factory.Simulation
 {
     public enum BuildingType : byte
@@ -44,9 +46,26 @@ namespace Factory.Simulation
         public ItemType Output { get; internal set; }
     }
 
+    /// <summary>One item riding a belt. Plain data: never a GameObject.</summary>
+    public struct BeltItem
+    {
+        public ItemType Item;
+        /// <summary>Distance from the entry edge, 0..Belt.Length.</summary>
+        public int Position;
+        /// <summary>Position at the start of the last tick, for smooth drawing only.</summary>
+        public int PreviousPosition;
+    }
+
     public sealed class Belt : Building
     {
+        /// <summary>Fixed-point length of one belt tile.</summary>
+        public const int Length = 1000;
+
         public override BuildingType Type => BuildingType.Belt;
+
+        /// <summary>Items ordered front first: Items[0] is the closest to the exit edge.</summary>
+        public IReadOnlyList<BeltItem> Items => ItemList;
+        internal readonly List<BeltItem> ItemList = new List<BeltItem>();
     }
 
     public sealed class Chest : Building

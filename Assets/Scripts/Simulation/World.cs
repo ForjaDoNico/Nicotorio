@@ -140,6 +140,8 @@ namespace Factory.Simulation
             if (!_buildingsByPos.TryGetValue(pos, out Building building)) return false;
             if (building is Chest chest) chest.Contents.TransferAllTo(PlayerInventory);
             if (building is Miner miner && miner.Output != ItemType.None) PlayerInventory.Add(miner.Output, 1);
+            if (building is Belt belt)
+                foreach (BeltItem item in belt.ItemList) PlayerInventory.Add(item.Item, 1);
 
             _buildingsByPos.Remove(pos);
             _buildings.Remove(building);
@@ -180,6 +182,7 @@ namespace Factory.Simulation
             _minedSinceLastTick = false;
 
             TickMiners();
+            TickBelts();
 
             TickCount++;
         }
@@ -203,18 +206,60 @@ namespace Factory.Simulation
         }
 
         /// <summary>
-        /// Offers one item to whatever is on pos. Returns false if nothing there accepts it,
-        /// in which case the caller keeps the item.
+        /// Moves every belt's items toward its exit, front item first, never closer than
+        /// BeltItemSpacing to the item ahead. The front item, once at the exit edge, is offered
+        /// to the tile in front; if that refuses, it waits there and everything behind it
+        /// queues up, which is how a full belt blocks the belt feeding it.
         /// </summary>
-        private bool TryInsert(GridPos pos, ItemType item)
+        private void TickBelts()
         {
+            int speed = Config.BeltSpeed;
+            int spacing = Config.BeltItemSpacing;
+
+            foreach (Building building in _buildings)
+            {
+                if (!(building is Belt belt)) continue;
+                List<BeltItem> items = belt.ItemList;
+
+                int limit = Belt.Length; // furthest this item may go: exit edge, or behind the one ahead
+                for (int i = 0; i < items.Count; i++)
+                {
+                    BeltItem it = items[i];
+                    it.PreviousPosition = it.Position;
+                    it.Position = Math.Max(it.Position, Math.Min(it.Position + speed, limit));
+
+                    if (i == 0 && it.Position >= Belt.Length && TryInsert(belt.Front, it.Item))
+                    {
+                        items.RemoveAt(0);
+                        i--;
+                        continue; // the next item now leads; limit stays at the exit edge
+                    }
+
+                    items[i] = it;
+                    limit = it.Position - spacing;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Offers one item to whatever is on pos: a chest stores it, a belt takes it at its
+        /// entry edge if there is room. Returns false if refused; the caller keeps the item.
+        /// </summary>
+        public bool TryInsert(GridPos pos, ItemType item)
+        {
+            if (item == ItemType.None) return false;
             switch (GetBuilding(pos))
             {
                 case Chest chest:
                     chest.Contents.Add(item, 1);
                     return true;
+                case Belt belt:
+                    List<BeltItem> items = belt.ItemList;
+                    if (items.Count > 0 && items[items.Count - 1].Position < Config.BeltItemSpacing) return false;
+                    items.Add(new BeltItem { Item = item, Position = 0, PreviousPosition = 0 });
+                    return true;
                 default:
-                    return false; // Belts start accepting items in stage 5.
+                    return false;
             }
         }
     }

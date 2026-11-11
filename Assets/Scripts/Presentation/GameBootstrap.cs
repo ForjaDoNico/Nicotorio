@@ -47,7 +47,7 @@ namespace Factory.Presentation
 
             var itemView = new GameObject("Items").AddComponent<ItemView>();
             itemView.transform.SetParent(root.transform, false);
-            itemView.Init(world, sprites);
+            itemView.Init(world, sprites, runner);
 
             var player = new GameObject("Player").AddComponent<PlayerController>();
             player.transform.SetParent(root.transform, false);

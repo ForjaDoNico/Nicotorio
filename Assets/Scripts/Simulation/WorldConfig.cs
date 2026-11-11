@@ -25,6 +25,13 @@ namespace Factory.Simulation
         /// <summary>Ticks a miner needs to dig one item (20 = 1 item per second).</summary>
         public int MinerTicksPerItem = 20;
 
+        // Belts. Item positions along a belt are integers from 0 (entry edge) to
+        // Belt.Length (exit edge), so belt motion is exact and deterministic.
+        /// <summary>Distance an item moves per tick (75 = 1.5 tiles per second).</summary>
+        public int BeltSpeed = 75;
+        /// <summary>Minimum gap between two items on a belt (250 = up to 5 items per belt).</summary>
+        public int BeltItemSpacing = 250;
+
         /// <summary>Where the player starts. The generator always puts one ore patch near it.</summary>
         public GridPos PlayerSpawn => new GridPos(Width / 2, Height / 2);
     }
