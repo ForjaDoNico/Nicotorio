@@ -9,7 +9,7 @@ namespace Factory.Presentation
     {
         private World _world;
         private Tilemap _tilemap;
-        private Tile _grass, _grassAlt, _ore;
+        private Tile _grass, _grassAlt, _ore, _coal;
 
         public void Init(World world, SpriteLibrary sprites)
         {
@@ -27,6 +27,7 @@ namespace Factory.Presentation
             _grass = MakeTile(sprites.Grass);
             _grassAlt = MakeTile(sprites.GrassAlt);
             _ore = MakeTile(sprites.IronOre);
+            _coal = MakeTile(sprites.CoalOre);
 
             RedrawAll();
         }
@@ -50,6 +51,7 @@ namespace Factory.Presentation
         private TileBase TileFor(GridPos p)
         {
             if (_world.GetTile(p) == TileType.IronOre) return _ore;
+            if (_world.GetTile(p) == TileType.CoalOre) return _coal;
             // Checker-ish variation so the grass doesn't read as one flat sheet.
             return ((p.X * 7 + p.Y * 13) % 5 == 0) ? _grassAlt : _grass;
         }

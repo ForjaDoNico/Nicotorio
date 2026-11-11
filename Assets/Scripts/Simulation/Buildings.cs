@@ -49,8 +49,8 @@ namespace Factory.Simulation
     }
 
     /// <summary>
-    /// Smelts what is in Input into Output (see Recipes) and pushes Output through Front.
-    /// Stops when Input is empty or Output is full.
+    /// Smelts what is in Input into Output (see Recipes), burning Fuel while it works, and
+    /// pushes Output through Front. Stops when Input is empty, Output is full or it runs out of fuel.
     /// </summary>
     public sealed class Furnace : Building
     {
@@ -58,6 +58,13 @@ namespace Factory.Simulation
 
         public ItemSlot Input { get; } = new ItemSlot();
         public ItemSlot Output { get; } = new ItemSlot();
+        public ItemSlot Fuel { get; } = new ItemSlot();
+
+        /// <summary>Smelting ticks left from the fuel item already burning. 0 = nothing lit.</summary>
+        public int BurnTicksLeft { get; internal set; }
+
+        /// <summary>Ticks of burn the current fuel item started with, for the fuel bar.</summary>
+        public int BurnTicksTotal { get; internal set; }
 
         /// <summary>Ticks spent on the item being smelted. Frozen while the furnace can't work.</summary>
         public int Progress { get; internal set; }

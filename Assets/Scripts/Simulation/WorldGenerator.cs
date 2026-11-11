@@ -5,20 +5,36 @@ namespace Factory.Simulation
     {
         public static TileType[] Generate(WorldConfig config)
         {
-            int width = config.Width;
-            int height = config.Height;
-            var tiles = new TileType[width * height];
+            var tiles = new TileType[config.Width * config.Height];
             var rng = new DeterministicRandom(config.Seed);
 
-            for (int patch = 0; patch < config.OrePatchCount; patch++)
+            // Iron first, so adding later resources never moves the iron patches.
+            var spawn = config.PlayerSpawn;
+            StampPatches(config, tiles, rng, TileType.IronOre, config.OrePatchCount,
+                config.OrePatchMinRadius, config.OrePatchMaxRadius, new GridPos(spawn.X + 6, spawn.Y + 3));
+            StampPatches(config, tiles, rng, TileType.CoalOre, config.CoalPatchCount,
+                config.CoalPatchMinRadius, config.CoalPatchMaxRadius, new GridPos(spawn.X - 6, spawn.Y - 4));
+            return tiles;
+        }
+
+        /// <summary>
+        /// Stamps roughly round patches of type. The first patch is centered on firstCenter (near
+        /// spawn, so it is on screen at start); the rest are random. Only grass is overwritten.
+        /// </summary>
+        private static void StampPatches(WorldConfig config, TileType[] tiles, DeterministicRandom rng,
+            TileType type, int count, int minRadius, int maxRadius, GridPos firstCenter)
+        {
+            int width = config.Width;
+            int height = config.Height;
+
+            for (int patch = 0; patch < count; patch++)
             {
-                int radius = rng.Range(config.OrePatchMinRadius, config.OrePatchMaxRadius + 1);
+                int radius = rng.Range(minRadius, maxRadius + 1);
                 int cx, cy;
                 if (patch == 0)
                 {
-                    // First patch sits a few tiles from spawn so ore is on screen at start.
-                    cx = config.PlayerSpawn.X + 6;
-                    cy = config.PlayerSpawn.Y + 3;
+                    cx = firstCenter.X;
+                    cy = firstCenter.Y;
                 }
                 else
                 {
@@ -37,13 +53,12 @@ namespace Factory.Simulation
                         int x = cx + dx;
                         int y = cy + dy;
                         if (x < 0 || y < 0 || x >= width || y >= height) continue;
-                        if (dx * dx + dy * dy <= r2 + jitter)
-                            tiles[y * width + x] = TileType.IronOre;
+                        int i = y * width + x;
+                        if (tiles[i] == TileType.Grass && dx * dx + dy * dy <= r2 + jitter)
+                            tiles[i] = type;
                     }
                 }
             }
-
-            return tiles;
         }
     }
 }

@@ -16,7 +16,7 @@ namespace Factory.Simulation
     }
 
     /// <summary>
-    /// The single place that says what a furnace can smelt. Today it is one fixed recipe;
+    /// The single place that says what a furnace can smelt and burn. Today it is one fixed recipe;
     /// a data-driven table only needs to replace TryGetSmelting.
     /// </summary>
     public static class Recipes
@@ -35,5 +35,17 @@ namespace Factory.Simulation
         }
 
         public static bool IsSmeltable(ItemType item, WorldConfig config) => TryGetSmelting(item, config, out _);
+
+        /// <summary>How many ticks of smelting one unit of item powers; 0 if it is not a fuel.</summary>
+        public static int BurnTicks(ItemType item, WorldConfig config)
+        {
+            switch (item)
+            {
+                case ItemType.Coal: return config.CoalBurnTicks;
+                default: return 0;
+            }
+        }
+
+        public static bool IsFuel(ItemType item, WorldConfig config) => BurnTicks(item, config) > 0;
     }
 }

@@ -8,6 +8,7 @@ namespace Factory.Simulation
         None = 0,
         IronOre = 1,
         IronPlate = 2,
+        Coal = 3,
     }
 
     /// <summary>
@@ -119,6 +120,14 @@ namespace Factory.Simulation
     public static class TileYield
     {
         /// <summary>The item a tile gives when mined, or None if it can't be mined.</summary>
-        public static ItemType Of(TileType tile) => tile == TileType.IronOre ? ItemType.IronOre : ItemType.None;
+        public static ItemType Of(TileType tile)
+        {
+            switch (tile)
+            {
+                case TileType.IronOre: return ItemType.IronOre;
+                case TileType.CoalOre: return ItemType.Coal;
+                default: return ItemType.None;
+            }
+        }
     }
 }

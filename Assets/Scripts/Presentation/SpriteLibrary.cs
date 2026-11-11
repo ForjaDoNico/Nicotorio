@@ -32,11 +32,14 @@ namespace Factory.Presentation
             ("item_iron_ore", DrawOreItem),
             ("furnace", DrawFurnace),
             ("item_iron_plate", DrawPlateItem),
+            ("coal_ore", DrawCoalOre),
+            ("item_coal", DrawCoalItem),
         };
 
         public Sprite Grass { get; }
         public Sprite GrassAlt { get; }
         public Sprite IronOre { get; }
+        public Sprite CoalOre { get; }
         public Sprite Player { get; }
         public Sprite CursorFrame { get; }
 
@@ -52,6 +55,7 @@ namespace Factory.Presentation
         // Items (on belts, in miner outputs): small, centered, transparent around.
         public Sprite IronOreItem { get; }
         public Sprite IronPlateItem { get; }
+        public Sprite CoalItem { get; }
 
         /// <summary>File names that had no PNG and were drawn in code this run.</summary>
         public List<string> Fallbacks { get; } = new List<string>();
@@ -83,6 +87,8 @@ namespace Factory.Presentation
             IronOreItem = byName["item_iron_ore"];
             Furnace = byName["furnace"];
             IronPlateItem = byName["item_iron_plate"];
+            CoalOre = byName["coal_ore"];
+            CoalItem = byName["item_coal"];
             WhitePixel = ToSprite(Fill(new Color32(255, 255, 255, 255)), "white_pixel");
         }
 
@@ -102,6 +108,7 @@ namespace Factory.Presentation
             switch (item)
             {
                 case Factory.Simulation.ItemType.IronPlate: return IronPlateItem;
+                case Factory.Simulation.ItemType.Coal: return CoalItem;
                 default: return IronOreItem;
             }
         }
@@ -143,7 +150,28 @@ namespace Factory.Presentation
             return px;
         }
 
-        private static void DrawRock(Color32[] px, int x0, int y0, int w, int h)
+        private static Color32[] DrawCoalOre()
+        {
+            var px = Fill(Palette.Grass);
+            DrawRock(px, 1, 2, 5, 5, Palette.Coal, Palette.CoalHighlight);
+            DrawRock(px, 8, 7, 6, 6, Palette.Coal, Palette.CoalHighlight);
+            DrawRock(px, 10, 1, 4, 4, Palette.Coal, Palette.CoalHighlight);
+            DrawRock(px, 3, 10, 4, 4, Palette.Coal, Palette.CoalHighlight);
+            return px;
+        }
+
+        private static Color32[] DrawCoalItem()
+        {
+            var px = Fill(Palette.Clear);
+            DrawRock(px, 5, 5, 6, 6, Palette.Coal, Palette.CoalHighlight);
+            Set(px, 7, 7, Palette.CoalHighlight);
+            return px;
+        }
+
+        private static void DrawRock(Color32[] px, int x0, int y0, int w, int h) =>
+            DrawRock(px, x0, y0, w, h, Palette.Ore, Palette.OreHighlight);
+
+        private static void DrawRock(Color32[] px, int x0, int y0, int w, int h, Color32 body, Color32 highlight)
         {
             for (int y = y0; y < y0 + h; y++)
             for (int x = x0; x < x0 + w; x++)
@@ -151,9 +179,9 @@ namespace Factory.Presentation
                 bool corner = (x == x0 || x == x0 + w - 1) && (y == y0 || y == y0 + h - 1);
                 if (corner) continue;
                 bool edge = x == x0 || x == x0 + w - 1 || y == y0 || y == y0 + h - 1;
-                Set(px, x, y, edge ? Palette.Shadow : Palette.Ore);
+                Set(px, x, y, edge ? Palette.Shadow : body);
             }
-            Set(px, x0 + 1, y0 + h - 2, Palette.OreHighlight);
+            Set(px, x0 + 1, y0 + h - 2, highlight);
         }
 
         private static Color32[] DrawPlayer()

@@ -24,6 +24,8 @@ namespace Factory.Presentation
         public static readonly Color32 Fire = Hex(0xF28C38);
         public static readonly Color32 Plate = Hex(0xB8BCCB);
         public static readonly Color32 PlateDark = Hex(0x7D8296);
+        public static readonly Color32 Coal = Hex(0x34303D);
+        public static readonly Color32 CoalHighlight = Hex(0x6A6478);
         /// <summary>Text for things the player can't afford right now.</summary>
         public static readonly Color32 Disabled = Hex(0x8A8794);
         public static readonly Color32 Clear = new Color32(0, 0, 0, 0);

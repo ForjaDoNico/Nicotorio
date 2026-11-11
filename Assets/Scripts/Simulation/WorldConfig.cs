@@ -14,6 +14,9 @@ namespace Factory.Simulation
         public int OrePatchCount = 9;
         public int OrePatchMinRadius = 2;
         public int OrePatchMaxRadius = 5;
+        public int CoalPatchCount = 7;
+        public int CoalPatchMinRadius = 2;
+        public int CoalPatchMaxRadius = 4;
 
         // Hand mining.
         /// <summary>Consecutive ticks of holding mine on one tile to get one item (10 = 0.5 s).</summary>
@@ -32,6 +35,13 @@ namespace Factory.Simulation
         public int FurnaceInputCapacity = 10;
         /// <summary>Most plates a furnace's output slot holds before it stops smelting.</summary>
         public int FurnaceOutputCapacity = 10;
+        /// <summary>Most fuel a furnace's fuel slot holds.</summary>
+        public int FurnaceFuelCapacity = 10;
+        /// <summary>
+        /// Ticks of smelting one coal powers (160 = 8 s = 4 plates at 40 ticks each).
+        /// Fuel only burns while the furnace is actually smelting.
+        /// </summary>
+        public int CoalBurnTicks = 160;
 
         // Belts. Item positions along a belt are integers from 0 (entry edge) to
         // Belt.Length (exit edge), so belt motion is exact and deterministic.

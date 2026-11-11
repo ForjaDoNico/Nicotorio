@@ -20,7 +20,15 @@ namespace Factory.Simulation.Tests
             config = config ?? Config();
             var world = new World(config, new TileType[config.Width * config.Height]);
             Assert.AreEqual(PlaceResult.Ok, world.TryPlace(BuildingType.Furnace, FurnaceTile, Direction.Right));
+            // These tests are about smelting, so the furnace starts with a full fuel slot
+            // (10 coal = 40 plates, more than any test here smelts). Fuel has its own tests.
+            AddCoal(world, FurnaceTile, 10);
             return world;
+        }
+
+        private static void AddCoal(World world, GridPos furnace, int coal)
+        {
+            for (int i = 0; i < coal; i++) Assert.IsTrue(world.TryInsert(furnace, ItemType.Coal));
         }
 
         private static Furnace TheFurnace(World w) => (Furnace)w.GetBuilding(FurnaceTile);
@@ -108,6 +116,7 @@ namespace Factory.Simulation.Tests
             world.SetTile(ore, TileType.IronOre);
             world.TryPlace(BuildingType.Miner, ore, Direction.Right);
             world.TryPlace(BuildingType.Furnace, new GridPos(2, 2), Direction.Right);
+            AddCoal(world, new GridPos(2, 2), 3); // 12 plates of burn time
             world.TryPlace(BuildingType.Belt, new GridPos(3, 2), Direction.Right);
             world.TryPlace(BuildingType.Belt, new GridPos(4, 2), Direction.Right);
             world.TryPlace(BuildingType.Chest, new GridPos(5, 2), Direction.Up);

@@ -117,11 +117,14 @@ namespace Factory.Presentation
                 _sb.Append("<b>Fornalha</b>");
                 _sb.Append("\nEntrada: ");
                 AppendSlot(furnace.Input, cfg.FurnaceInputCapacity, ItemType.IronOre);
+                _sb.Append("\nCarvão: ");
+                AppendSlot(furnace.Fuel, cfg.FurnaceFuelCapacity, ItemType.Coal);
                 _sb.Append("\nSaída: ");
                 AppendSlot(furnace.Output, cfg.FurnaceOutputCapacity, ItemType.IronPlate);
                 int percent = furnace.Progress * 100 / cfg.FurnaceTicksPerItem;
                 _sb.Append("\nFundindo: ").Append(percent).Append('%');
-                _sb.Append("\n<size=24>Esq: abastecer com minério / pegar placas</size>");
+                if (furnace.BurnTicksLeft == 0 && furnace.Fuel.IsEmpty) _sb.Append("  <i>sem carvão</i>");
+                _sb.Append("\n<size=24>Esq: abastecer com minério e carvão / pegar placas</size>");
             }
             _hoverText.text = _sb.ToString();
         }
@@ -132,7 +135,9 @@ namespace Factory.Presentation
             switch (b)
             {
                 case Chest chest: return chest.Contents.Version;
-                case Furnace f: return ((long)f.Input.Count << 40) | ((long)f.Output.Count << 20) | (uint)f.Progress;
+                case Furnace f:
+                    return ((long)f.Input.Count << 48) | ((long)f.Fuel.Count << 40) | ((long)f.Output.Count << 32)
+                           | ((long)(f.BurnTicksLeft > 0 ? 1 : 0) << 31) | (uint)f.Progress;
                 default: return -1;
             }
         }
@@ -237,6 +242,7 @@ namespace Factory.Presentation
             {
                 case ItemType.IronOre: return "Minério de ferro";
                 case ItemType.IronPlate: return "Placa de ferro";
+                case ItemType.Coal: return "Carvão";
                 default: return item.ToString();
             }
         }
@@ -248,6 +254,7 @@ namespace Factory.Presentation
             {
                 case ItemType.IronOre: return count == 1 ? "minério" : "minérios";
                 case ItemType.IronPlate: return count == 1 ? "placa" : "placas";
+                case ItemType.Coal: return count == 1 ? "carvão" : "carvões";
                 default: return item.ToString();
             }
         }

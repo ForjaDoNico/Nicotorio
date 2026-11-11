@@ -66,7 +66,7 @@ namespace Factory.Simulation
         /// <summary>A world with no ore at all; tests paint the tiles they need.</summary>
         public static World CreateEmpty(int width, int height)
         {
-            var config = new WorldConfig { Width = width, Height = height, OrePatchCount = 0 };
+            var config = new WorldConfig { Width = width, Height = height, OrePatchCount = 0, CoalPatchCount = 0 };
             return new World(config, new TileType[width * height]);
         }
 
@@ -115,7 +115,7 @@ namespace Factory.Simulation
         {
             if (!InBounds(pos)) return PlaceResult.OutOfBounds;
             if (_buildingsByPos.ContainsKey(pos)) return PlaceResult.Occupied;
-            if (type == BuildingType.Miner && GetTile(pos) != TileType.IronOre) return PlaceResult.RequiresOre;
+            if (type == BuildingType.Miner && TileYield.Of(GetTile(pos)) == ItemType.None) return PlaceResult.RequiresOre;
             if (!CanAfford(type)) return PlaceResult.NotEnoughItems;
             return PlaceResult.Ok;
         }
@@ -170,6 +170,7 @@ namespace Factory.Simulation
             {
                 if (!furnace.Input.IsEmpty) PlayerInventory.Add(furnace.Input.Item, furnace.Input.Count);
                 if (!furnace.Output.IsEmpty) PlayerInventory.Add(furnace.Output.Item, furnace.Output.Count);
+                if (!furnace.Fuel.IsEmpty) PlayerInventory.Add(furnace.Fuel.Item, furnace.Fuel.Count);
             }
 
             _buildingsByPos.Remove(pos);
@@ -189,37 +190,50 @@ namespace Factory.Simulation
         }
 
         /// <summary>
-        /// The player's click on a furnace: loads all the player's smeltable ore into the input
-        /// (up to FurnaceInputCapacity) and takes every finished item from the output.
-        /// Returns how many items moved in total (0 if there is no furnace there).
+        /// Shortcut for all three furnace actions at once: takes the finished items, then loads the
+        /// player's smeltable items and fuel. Returns how many items moved (0 if there is no furnace).
         /// </summary>
-        public int InteractWithFurnace(GridPos pos)
+        public int InteractWithFurnace(GridPos pos) =>
+            TakeFurnaceOutput(pos) + LoadFurnaceInput(pos) + LoadFurnaceFuel(pos);
+
+        /// <summary>Moves every finished item from the furnace's output to the player. Returns how many.</summary>
+        public int TakeFurnaceOutput(GridPos pos)
+        {
+            if (!(GetBuilding(pos) is Furnace furnace) || furnace.Output.IsEmpty) return 0;
+            ItemType product = furnace.Output.Item;
+            int n = furnace.Output.Take(furnace.Output.Count);
+            PlayerInventory.Add(product, n);
+            return n;
+        }
+
+        /// <summary>Loads the player's smeltable items into the input, up to its capacity. Returns how many.</summary>
+        public int LoadFurnaceInput(GridPos pos)
         {
             if (!(GetBuilding(pos) is Furnace furnace)) return 0;
-            int moved = 0;
+            return LoadSlot(furnace.Input, Config.FurnaceInputCapacity, item => Recipes.IsSmeltable(item, Config));
+        }
 
-            if (!furnace.Output.IsEmpty)
-            {
-                ItemType product = furnace.Output.Item;
-                int n = furnace.Output.Take(furnace.Output.Count);
-                PlayerInventory.Add(product, n);
-                moved += n;
-            }
+        /// <summary>Loads the player's fuel into the fuel slot, up to its capacity. Returns how many.</summary>
+        public int LoadFurnaceFuel(GridPos pos)
+        {
+            if (!(GetBuilding(pos) is Furnace furnace)) return 0;
+            return LoadSlot(furnace.Fuel, Config.FurnaceFuelCapacity, item => Recipes.IsFuel(item, Config));
+        }
 
-            ItemType toSmelt = ItemType.None;
+        /// <summary>Moves the first matching item type the player has (in ItemType order) into slot.</summary>
+        private int LoadSlot(ItemSlot slot, int capacity, Func<ItemType, bool> accepts)
+        {
+            ItemType chosen = ItemType.None;
             foreach (var stack in PlayerInventory.Stacks())
             {
-                bool fits = furnace.Input.IsEmpty || furnace.Input.Item == stack.Key;
-                if (fits && Recipes.IsSmeltable(stack.Key, Config)) { toSmelt = stack.Key; break; }
+                bool fits = slot.IsEmpty || slot.Item == stack.Key;
+                if (fits && accepts(stack.Key)) { chosen = stack.Key; break; }
             }
-            if (toSmelt != ItemType.None)
-            {
-                int room = Config.FurnaceInputCapacity - furnace.Input.Count;
-                int n = PlayerInventory.Remove(toSmelt, Math.Max(0, room));
-                if (n > 0) furnace.Input.Add(toSmelt, n);
-                moved += n;
-            }
-            return moved;
+            if (chosen == ItemType.None) return 0;
+
+            int n = PlayerInventory.Remove(chosen, Math.Max(0, capacity - slot.Count));
+            if (n > 0) slot.Add(chosen, n);
+            return n;
         }
 
         public Building GetBuilding(GridPos pos) =>
@@ -282,7 +296,8 @@ namespace Factory.Simulation
 
         /// <summary>
         /// Each furnace smelts one item at a time from Input into Output, only while it has
-        /// something smeltable and room for the result, then offers one finished item to Front.
+        /// something smeltable, room for the result and fuel burning; each smelting tick uses one
+        /// tick of burn time. Then it offers one finished item to Front.
         /// </summary>
         private void TickFurnaces()
         {
@@ -292,8 +307,10 @@ namespace Factory.Simulation
 
                 if (!furnace.Input.IsEmpty
                     && Recipes.TryGetSmelting(furnace.Input.Item, Config, out SmeltingRecipe recipe)
-                    && furnace.Output.CanAdd(recipe.Output, 1, Config.FurnaceOutputCapacity))
+                    && furnace.Output.CanAdd(recipe.Output, 1, Config.FurnaceOutputCapacity)
+                    && TryKeepLit(furnace))
                 {
+                    furnace.BurnTicksLeft--;
                     furnace.Progress++;
                     if (furnace.Progress >= recipe.Ticks)
                     {
@@ -306,6 +323,22 @@ namespace Factory.Simulation
                 if (!furnace.Output.IsEmpty && TryInsert(furnace.Front, furnace.Output.Item))
                     furnace.Output.Take(1);
             }
+        }
+
+        /// <summary>
+        /// Makes sure the furnace has burn time for this tick, lighting one fuel item if the
+        /// last one ran out. Returns false (the furnace stalls) when there is nothing to burn.
+        /// </summary>
+        private bool TryKeepLit(Furnace furnace)
+        {
+            if (furnace.BurnTicksLeft > 0) return true;
+            if (furnace.Fuel.IsEmpty) return false;
+            int burn = Recipes.BurnTicks(furnace.Fuel.Item, Config);
+            if (burn <= 0) return false;
+            furnace.Fuel.Take(1);
+            furnace.BurnTicksLeft = burn;
+            furnace.BurnTicksTotal = burn;
+            return true;
         }
 
         /// <summary>
@@ -346,7 +379,7 @@ namespace Factory.Simulation
 
         /// <summary>
         /// Offers one item to whatever is on pos: a chest stores it, a belt takes it at its
-        /// entry edge if there is room, a furnace takes smeltable items while its input has room. Returns false if refused; the caller keeps the item.
+        /// entry edge if there is room, a furnace takes fuel into its fuel slot and smeltable items into its input, while there is room. Returns false if refused; the caller keeps the item.
         /// </summary>
         public bool TryInsert(GridPos pos, ItemType item)
         {
@@ -357,6 +390,12 @@ namespace Factory.Simulation
                     chest.Contents.Add(item, 1);
                     return true;
                 case Furnace furnace:
+                    if (Recipes.IsFuel(item, Config))
+                    {
+                        if (!furnace.Fuel.CanAdd(item, 1, Config.FurnaceFuelCapacity)) return false;
+                        furnace.Fuel.Add(item, 1);
+                        return true;
+                    }
                     if (!Recipes.IsSmeltable(item, Config)) return false;
                     if (!furnace.Input.CanAdd(item, 1, Config.FurnaceInputCapacity)) return false;
                     furnace.Input.Add(item, 1);

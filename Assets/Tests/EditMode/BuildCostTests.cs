@@ -7,12 +7,14 @@ namespace Factory.Simulation.Tests
     {
         private static readonly GridPos OreTile = new GridPos(4, 4);
         private static readonly GridPos GrassTile = new GridPos(8, 8);
+        private static readonly GridPos CoalTile = new GridPos(5, 6);
 
         private static World MakeWorld(params ItemAmount[] start)
         {
             var config = new WorldConfig { Width = 12, Height = 12, OrePatchCount = 0, StartingInventory = start };
             var world = new World(config, new TileType[config.Width * config.Height]);
             world.SetTile(OreTile, TileType.IronOre);
+            world.SetTile(CoalTile, TileType.CoalOre);
             return world;
         }
 
@@ -113,9 +115,10 @@ namespace Factory.Simulation.Tests
             Assert.AreEqual(PlaceResult.Ok, world.TryPlace(BuildingType.Furnace, furnaceTile, Direction.Up));
             Assert.AreEqual(0, Ore(world));
 
-            // 2. Mine 3 more ore and load it into the furnace by hand.
+            // 2. Mine 3 more ore and 1 coal, and load both into the furnace by hand.
             HandMine(world, player, 3);
-            Assert.AreEqual(3, world.InteractWithFurnace(furnaceTile));
+            HandMine(world, CoalTile, player, ItemType.Coal, 1);
+            Assert.AreEqual(3 + 1, world.InteractWithFurnace(furnaceTile));
 
             // 3. Wait for 3 plates and take them.
             for (int i = 0; i < 3 * world.Config.FurnaceTicksPerItem; i++) world.Tick();
@@ -128,14 +131,17 @@ namespace Factory.Simulation.Tests
             Assert.AreEqual(BuildingType.Miner, world.GetBuilding(OreTile).Type);
         }
 
-        /// <summary>Holds mine on the ore tile until count more items arrive, like the player would.</summary>
-        private static void HandMine(World world, GridPos player, int count)
+        private static void HandMine(World world, GridPos player, int count) =>
+            HandMine(world, OreTile, player, ItemType.IronOre, count);
+
+        /// <summary>Holds mine on tile until count more of item arrive, like the player would.</summary>
+        private static void HandMine(World world, GridPos tile, GridPos player, ItemType item, int count)
         {
-            int target = Ore(world) + count;
-            for (int guard = 0; Ore(world) < target; guard++)
+            int target = world.PlayerInventory.Count(item) + count;
+            for (int guard = 0; world.PlayerInventory.Count(item) < target; guard++)
             {
                 Assert.Less(guard, 10000, "hand mining never produced");
-                world.MineStep(OreTile, player);
+                world.MineStep(tile, player);
                 world.Tick();
             }
         }
