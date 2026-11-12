@@ -14,9 +14,9 @@ Protótipo de jogo de automação em visão de cima, feito em **Unity 6** (URP 2
   - Clique nela para abrir a lista de receitas.
   - O filtro **"Posso fazer"** mostra o que dá para fazer agora, e **"Todas"** mostra tudo, com o que falta em vermelho.
   - Clique numa receita para fazer 1, Shift+clique para fazer 5, botão direito para fazer o máximo.
-- **Mineradora**: só pode ser colocada em minério. Produz 1 minério por segundo e entrega no tile para onde a seta aponta. Se não tiver onde entregar, ela segura o item e para.
+- **Mineradora**: só pode ser colocada em minério de ferro ou de carvão. Produz 1 item por segundo e entrega no tile para onde a seta aponta. Se não tiver onde entregar, ela segura o item e para.
 - **Esteira**: leva os itens na direção da seta e entrega na próxima esteira ou num baú. Quando uma esteira enche, ela trava a de trás.
-- **Baú**: guarda tudo o que chega. Clique nele para pegar o conteúdo.
+- **Baú**: guarda tudo o que chega. Clique nele para pegar o conteúdo, ou passe o mouse por cima para ver o que tem dentro.
 - **Fornalha**: transforma 1 minério de ferro em 1 placa de ferro a cada 2 segundos e entrega a placa no tile para onde a seta aponta.
   - Queima **carvão** (1 carvão = 4 placas) ou **madeira** (1 madeira = 2 placas). O combustível só é gasto enquanto a fornalha funde.
   - Guarda até 10 minérios, 10 combustíveis e 10 placas.
@@ -58,7 +58,7 @@ Protótipo de jogo de automação em visão de cima, feito em **Unity 6** (URP 2
 | **R** | girar a construção |
 | **Botão esquerdo** | construir; segure e arraste para fazer uma linha |
 | **Botão esquerdo no baú** | pegar tudo o que está nele |
-| **Botão esquerdo na fornalha** | abrir a janela da fornalha (clique nos slots para colocar minério/carvão e pegar placas) |
+| **Botão esquerdo na fornalha** | abrir a janela da fornalha (clique nos slots para colocar minério ou combustível e pegar placas) |
 | **Botão esquerdo na bancada** | abrir a lista de receitas (clique: 1, Shift+clique: 5, botão direito: o máximo) |
 | **Esc / E** | fechar a janela da fornalha ou da bancada |
 | **X** | remover a construção sob o mouse; o que ela tinha volta para você |
