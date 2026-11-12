@@ -2,7 +2,7 @@
 
 Protótipo de jogo de automação em visão de cima, feito em **Unity 6** (URP 2D). Você começa cortando árvores e monta uma bancada de criação. Depois minera ferro e carvão, funde o minério em placas numa fornalha e cria na bancada as mineradoras, esteiras e baús que automatizam tudo.
 
-![Fábrica com mineradoras alimentando uma esteira que desce até um baú](docs/images/fabrica.png)
+![Fábrica: mineradoras de ferro numa esteira que desce até a fornalha, uma linha de carvão entrando pelo lado e as placas saindo para um baú](docs/images/fabrica.png)
 
 ## O que tem
 
@@ -40,17 +40,13 @@ Protótipo de jogo de automação em visão de cima, feito em **Unity 6** (URP 2
 
   A hotbar mostra quantos itens de cada construção você tem ("x3"; a bancada mostra o custo em madeira) e fica cinza quando você não tem nenhum.
 
-| Mineração manual | Esteira cheia trava a de trás |
+| Começo: bancada e fornalha queimando madeira | Janela da fornalha |
 |---|---|
-| ![Jogador minerando um tile de minério, com a barra de progresso](docs/images/mineracao-manual.png) | ![Linha com curva entregando num baú e uma linha travada sem saída](docs/images/esteiras.png) |
-
-| Conteúdo do baú ao passar o mouse | Janela da fornalha |
-|---|---|
-| ![Painel no canto mostrando o conteúdo do baú](docs/images/bau.png) | ![Janela da fornalha com slots de minério, carvão e placas](docs/images/fornalha.png) |
+| ![Jogador ao lado do bosque com uma bancada e uma fornalha recém-construídas](docs/images/inicio.png) | ![Janela da fornalha com os slots de minério, combustível e placas e as barras de fusão e chama](docs/images/fornalha.png) |
 
 | Bancada de criação |
 |---|
-| ![Janela da bancada com a lista de receitas, as que faltam ingredientes em cinza com o que falta em vermelho](docs/images/bancada.png) |
+| ![Janela da bancada com a lista de receitas; as que faltam ingredientes ficam em cinza com o que falta em vermelho](docs/images/bancada.png) |
 
 ## Controles
 
